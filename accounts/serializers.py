@@ -113,7 +113,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id','first_name','email','phone_number','address','city','state','is_active','image','country','date_joined','last_login_display']
+        fields = ['id','first_name','email','phone_number','address','city','state','is_active','is_superuser','image','country','date_joined','last_login_display']
 
     def get_last_login_display(self, obj):
         return humanize.naturaltime(obj.last_login)
