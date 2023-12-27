@@ -16,7 +16,7 @@ import jwt
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .serializers import UserRegisterSerializer,ChangePasswordSerializer,ForgotPasswordSerializer,PasswordResetConfirmSerializer
+from .serializers import UserRegisterSerializer,UserChangePasswordSerializer,ForgotPasswordSerializer,PasswordResetConfirmSerializer
 from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer,SendPasswordResetEmailSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView ,TokenRefreshView
@@ -29,15 +29,15 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from accounts.renderers import UserRenderer
+from accounts.renderers import AccountUserRenderer
 from rest_framework.authtoken.models import Token
 
-from .helper import send,check
+from .helper import send_otp,verify_otp
+from . import helper
 
-# from twilio.rest import Client
+from twilio.rest import Client
 from django.db import IntegrityError
-# import string
-# from .helper import generate_otp, send_otp_email
+
 
 
 User = get_user_model()
@@ -103,12 +103,13 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 #<------------------Admin Side------------------>
 
+
 class UserListView(generics.ListAPIView):
 
     serializer_class = UserSerializer
     def get_queryset(self):
-        # Filter users by the 'guest' role
-        return AccountUser.objects.all()
+        
+        return AccountUser.objects.filter(is_superuser = False)
     
 class BlockUnblockUserView(UpdateAPIView):
     serializer_class = UserSerializer
@@ -151,23 +152,7 @@ class UserProfileUpdateView(generics.UpdateAPIView):
     def get_queryset(self):
         return AccountUser.objects.filter(user=self.request.user)
     
-# class UserProfileUpdateView(APIView):
-#     permission_classes = [IsAuthenticated]
 
-#     def get(self, request, *args, **kwargs):
-#         user = self.request.user
-#         serializer = UserProfileSerializer(user)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-#     def put(self, request, *args, **kwargs):
-#         user = self.request.user
-#         serializer = UserProfileSerializer(user, data=request.data, partial=True)
-
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 class UserDetailView(RetrieveAPIView):
     serializer_class = UserSerializer
@@ -175,127 +160,84 @@ class UserDetailView(RetrieveAPIView):
     
     def get_object(self):
         return self.request.user
-    
-class ForgotPasswordView(generics.GenericAPIView):
-    serializer_class = ForgotPasswordSerializer
-    permission_classes = [permissions.AllowAny]
 
+    
+
+
+
+class ForgotPasswordView(APIView):
     def post(self, request):
-        serializer = self.get_serializer(data=request.data)
+        mobile_number = request.data.get('phone_number')
+        if not mobile_number:
+            return Response({'error': 'You must enter a mobile number'}, status=status.HTTP_400_BAD_REQUEST)
         
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            try:
-                user = User.objects.get(email=email)
-                if not user.is_active():
-                    return Response({'detail': 'User with this has been blocked.'}, status=status.HTTP_400_BAD_REQUEST)
-            except User.DoesNotExist:
-                return Response({'detail': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Generate a password reset token
-            token = default_token_generator.make_token(user)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            current_domain = request.build_absolute_uri("/")
-            reset_url = f"{current_domain.rstrip('/')}{reverse('password_reset_confirm', args=[uid, token])}"
-            # reset_url = f"https://site/password-reset/{uid}/{token}"
-
-            # Send the reset password email using EmailUtils
-            email_subject = 'Reset your password'
-            email_body = f'Click the following link to reset your password:\n\n{reset_url}'
-            Util.send_password_reset_email(email_subject, email_body, email)
-
-            return Response({'detail': 'Password reset email sent.'}, status=status.HTTP_200_OK)
+        user = AccountUser.objects.filter(phone_number=mobile_number)
+        if user.exists():
+            # Generate OTP and send it (assuming `verify.send` method does this)
+            helper.send_otp('+91' + str(mobile_number))
+            return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Mobile number does not exist'}, status=status.HTTP_404_NOT_FOUND)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-# # views.py
-# from rest_framework.generics import UpdateAPIView
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework import status
-# from rest_framework.response import Response
-# from django.contrib.auth.models import User
-# from rest_framework import serializers
-# from rest_framework import exceptions
-# from django.contrib.auth.hashers import check_password
+class ForgotPasswordOTPView(APIView):
+    def post(self, request):
+        mobile_number = request.data.get('phone_number')
+        otp = request.data.get('otp')
 
-# from .serializers import ChangePasswordSerializer
+        if not mobile_number or not otp:
+            return Response({'error': 'Invalid request. Please provide mobile number and OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
-class ChangePasswordView(generics.UpdateAPIView):
-    serializer_class = ChangePasswordSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def put(self, request, *args, **kwargs):
-        user = self.request.user
-        serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid():
-            old_password = serializer.validated_data.get('old_password')
-            new_password = serializer.validated_data.get('new_password')
-
-            # Check if the old password matches
-            if not check_password(old_password, user.password):
-                return Response({'detail': 'Old password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Update the password
-            user.set_password(new_password)
-            user.save()
-            return Response({'detail': 'Password successfully changed.'}, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class SendPasswordResetEmailView(APIView):
-  renderer_classes = [UserRenderer]
-  def post(self, request, format=None):
-    serializer = SendPasswordResetEmailSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    return Response({'msg':'Password Reset link send. Please check your Email'}, status=status.HTTP_200_OK)
-
-class PasswordResetConfirmView(APIView):
-    serializer_class = PasswordResetConfirmSerializer
-
-    def post(self, request, uidb64, token):
-        serializer = self.serializer_class(data=request.data)
-
-        if serializer.is_valid():
+        if helper.verify_otp('+91' + str(mobile_number), otp):
             try:
-                # Decode the uidb64 to get the user's primary key
-                user_id = force_str(urlsafe_base64_decode(uidb64))
-                user = User.objects.get(pk=user_id)
+                user = AccountUser.objects.get(phone_number=mobile_number)
+                if user:
+                    return Response({'message': 'Redirect to reset password view'}, status=status.HTTP_200_OK)  # Modify this line as per your redirect logic
+            except AccountUser.DoesNotExist:
+                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Check if the token is valid for the user
-                if default_token_generator.check_token(user, token):
-                    new_password = serializer.validated_data['new_password']
 
-                    # Set the new password and save the user
-                    user.set_password(new_password)
-                    user.save()
 
-                    return Response({'detail': 'Password successfully reset.'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
-            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-                return Response({'error': 'Invalid user.'}, status=status.HTTP_400_BAD_REQUEST)
+class UserChangePasswordView(APIView):
+    renderer_classes = [AccountUserRenderer]
+    permission_classes =[IsAuthenticated]
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post(self,request,format= None):
+        serializer_class = UserChangePasswordSerializer(data = request.data,context ={'user':request.user})
+        if serializer_class.is_valid(raise_exception=True):
+            return Response({"msg":"password change successfull"},status=status.HTTP_200_OK)
+        return Response(serializer_class.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
     
 
-class OtpSent(APIView):
-    permission_classes=[IsAuthenticated]
+class SendOTP(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
-        send(phone_number)  # Call send function from helper.py
-        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+        if not phone_number:
+            return Response({'message': 'Phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-class OtpVerify(APIView):
-    permission_classes=[IsAuthenticated]
+        sent = send_otp(phone_number)
+        if sent:
+            return Response({'message': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'Failed to send OTP.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class VerifyOTP(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
         otp = request.data.get('otp')
-        if check(phone_number, otp):  # Call check function from helper.py
-            return Response({'message': 'OTP verified successfully'}, status=status.HTTP_200_OK)
+        if not phone_number or not otp:
+            return Response({'message':'OTP code are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        verified =verify_otp (phone_number, otp)
+        if verified:
+            return Response({'message': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # class OtpSent(APIView):

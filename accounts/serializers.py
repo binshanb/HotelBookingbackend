@@ -7,12 +7,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from phonenumber_field.serializerfields import PhoneNumberField
 from django.contrib.humanize.templatetags import humanize
-from .models import Role
+from .models import Role,AccountUser
 from django.utils.timesince import timesince
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 # from accounts.utils import Util
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.hashers import check_password
 
 # user register serializer
 
@@ -119,90 +120,38 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 
-
-
-class OTPSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(max_length=15)
+class ForgotPasswordSerializer(serializers.Serializer):
+    mobile_number = serializers.CharField()
     otp = serializers.CharField(max_length=6)
 
-    
 
 
-class ForgotPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+class UserChangePasswordSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(max_length =255,style = {'input_type':'password'},write_only = True)
+    new_password = serializers.CharField(max_length =255,style = {'input_type':'password'},write_only = True)
+    new_password2 = serializers.CharField(max_length =255,style = {'input_type':'password'},write_only = True)
 
+    class Meta:
+        model = AccountUser
+        fields = ['old_password','new_password','new_password2']
 
+    def validate(self, attrs):
 
-class ChangePasswordSerializer(serializers.Serializer):
-  old_password = serializers.CharField(required=True)
-  new_password = serializers.CharField(required=True)
-  class Meta:
-    fields = ['password', 'password2']
+        old_password = attrs.get('old_password')
+        new_password = attrs.get('new_password')
+        new_password2 = attrs.get('new_password2')
+        user = self.context.get('user')
 
-  def validate(self, attrs):
-    password = attrs.get('password')
-    password2 = attrs.get('password2')
-    user = self.context.get('user')
-    if password != password2:
-      raise serializers.ValidationError("Password and Confirm Password doesn't match")
-    user.set_password(password)
-    user.save()
-    return attrs
+      
 
-class SendPasswordResetEmailSerializer(serializers.Serializer):
-  email = serializers.EmailField(max_length=255)
-  class Meta:
-    fields = ['email']
-
-  def validate(self, attrs):
-    email = attrs.get('email')
-    if User.objects.filter(email=email).exists():
-      user = User.objects.get(email = email)
-      uid = urlsafe_base64_encode(force_bytes(user.id))
-      print('Encoded UID', uid)
-      token = PasswordResetTokenGenerator().make_token(user)
-      print('Password Reset Token', token)
-      link = 'http://localhost:3000/api/user/reset/'+uid+'/'+token
-      print('Password Reset Link', link)
-      # Send EMail
-      body = 'Click Following Link to Reset Your Password '+link
-      data = {
-        'subject':'Reset Your Password',
-        'body':body,
-        'to_email':user.email
-      }
-      # Util.send_email(data)
-      return attrs
-    else:
-      raise serializers.ValidationError('You are not a Registered User')
-
-class PasswordResetConfirmSerializer(serializers.Serializer):
-    new_password = serializers.CharField(
-        style={'input_type': 'password'},
-        write_only=True
-    )
-    confirm_new_password = serializers.CharField(
-        style={'input_type': 'password'},
-        write_only=True
-    )
-
-    def validate(self, data):
-        new_password = data.get('new_password')
-        confirm_new_password = data.get('confirm_new_password')
-
-        # Check if the passwords match
-        if new_password != confirm_new_password:
-            raise serializers.ValidationError("Passwords do not match.")
-
-        # Check if the password length is at least 8 characters
-        if len(new_password) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters long.")
-
-        # Check if there are spaces in the password
-        if ' ' in new_password:
-            raise serializers.ValidationError("Password cannot contain spaces.")
-
-        return data
+        if not check_password(old_password,user.password):
+            raise serializers.ValidationError("Old Password and Entered Password Doesn't Match")
+            
+        if new_password != new_password2:
+            raise serializers.ValidationError("password doesn't match")
+        user.set_password(new_password)
+        user.save()
+        return attrs
   
 
 
