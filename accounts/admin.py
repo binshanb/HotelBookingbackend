@@ -6,17 +6,13 @@ class AccountUserAdmin(UserAdmin):
     list_display = ('id', 'email', 'phone_number', 'is_active', 'role', 'is_superuser')
     search_fields = ('email', 'phone_number')
     
-    # Specify a valid field for ordering, for example, 'id'
-
     ordering = ('id',)
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name' ,'role', 'phone_number', 'image')}),
+        ('Personal info', {'fields': ('first_name', 'last_name' ,'role', 'phone_number', 'image', 'address', 'city', 'state', 'country')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-       
     )
-
 
 
 # class UserProfileAdmin(admin.ModelAdmin):

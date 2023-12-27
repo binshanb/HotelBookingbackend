@@ -109,7 +109,7 @@ class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     def get_queryset(self):
         
-        return AccountUser.objects.filter(is_superuser = False)
+        return AccountUser.objects.filter(is_superuser = 'False')
     
 class BlockUnblockUserView(UpdateAPIView):
     serializer_class = UserSerializer
