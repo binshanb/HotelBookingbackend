@@ -243,13 +243,11 @@ AUTH_USER_MODEL = 'accounts.AccountUser'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = [
-    "https://master.dxnc3dsgdoeyg.amplifyapp.com",
-]
-# # # Email Configuration
+# CORS_ALLOWED_ORIGINS = [
+#   "https://master.dxnc3dsgdoeyg.amplifyapp.com",
+# ]
+# # # # Email Configuration
 # EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
 # EMAIL_HOST = os.getenv("EMAIL_HOST")
 # EMAIL_PORT = os.getenv("EMAIL_PORT")
 # EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-# EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-# EMAIL_USE_TLS = True
