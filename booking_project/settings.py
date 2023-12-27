@@ -244,7 +244,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "https://master.dabgsh2k3fwjr.amplifyapp.com",
+    "https://master.dxnc3dsgdoeyg.amplifyapp.com",
 ]
 # # # Email Configuration
 # EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
