@@ -16,8 +16,8 @@ import jwt
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .serializers import UserRegisterSerializer,UserChangePasswordSerializer,ForgotPasswordSerializer,PasswordResetConfirmSerializer
-from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer,SendPasswordResetEmailSerializer
+from .serializers import UserRegisterSerializer,UserChangePasswordSerializer,ForgotPasswordSerializer
+from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView ,TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -29,7 +29,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from accounts.renderers import AccountUserRenderer
+from .renderers import AccountUserRenderer
 from rest_framework.authtoken.models import Token
 
 from .helper import send_otp,verify_otp
