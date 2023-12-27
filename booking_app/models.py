@@ -23,7 +23,7 @@ class Room(models.Model):
     room_slug = models.SlugField()
     capacity =  models.PositiveIntegerField(validators=[MinValueValidator(0)])
     room_size = models.PositiveIntegerField(validators=[MinValueValidator(0)])
-    cover_image = models.ImageField(upload_to='media/images')
+    cover_image = models.ImageField(upload_to='media/media/images')
     features = models.ManyToManyField(RoomFeature)
     description = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -71,6 +71,7 @@ class RoomBooking(models.Model):
     check_in = models.DateTimeField(null=True, blank=True,default=timezone.now)
     check_out = models.DateTimeField(null=True, blank=True,default=timezone.now)
     number_of_guests = models.IntegerField(null=True, blank=True)
+    total_amount = models.IntegerField(default=0)
     
     booking_status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),

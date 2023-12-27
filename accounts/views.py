@@ -108,7 +108,7 @@ class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     def get_queryset(self):
         # Filter users by the 'guest' role
-        return AccountUser.objects.filter(role='guest')
+        return AccountUser.objects.all()
     
 class BlockUnblockUserView(UpdateAPIView):
     serializer_class = UserSerializer

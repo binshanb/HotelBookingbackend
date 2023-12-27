@@ -22,6 +22,11 @@ User = get_user_model()
 
 class UserRegisterSerializer(serializers.ModelSerializer):
 
+    first_name = serializers.CharField(
+        required = True,
+        validators = [UniqueValidator(queryset=User.objects.all())]
+    )
+
     email = serializers.EmailField(
         required = True,
         validators = [UniqueValidator(queryset=User.objects.all())]
@@ -37,7 +42,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email','phone_number','password','password2']
+        fields = ['first_name','email','phone_number','password','password2']
 
     def validate_password(self, password):
         # Password policy: Minimum 6 characters, at least one uppercase letter, one lowercase letter, and one digit

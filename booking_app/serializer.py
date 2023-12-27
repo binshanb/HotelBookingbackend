@@ -57,6 +57,11 @@ class RoomBookingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Check-out date cannot be before check-in date.")
         return data
     
+class RoomBookingSerializer1(serializers.Serializer):
+       class Meta:
+        model = RoomBooking
+        fields = '__all__'
+    
 class RoomAvailabilityCheckSerializer(serializers.Serializer):
     check_in = serializers.DateField()
     check_out = serializers.DateField()
