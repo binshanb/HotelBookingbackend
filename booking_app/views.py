@@ -14,7 +14,7 @@ from rest_framework.generics import UpdateAPIView
 from django.http import JsonResponse
 from django.views import View
 from django.shortcuts import get_list_or_404
-
+import os
 from django.http import Http404
 import razorpay
 from decouple import config
@@ -513,7 +513,7 @@ class RazorpayOrderView(APIView):
             amount = request.data.get('amount')
 
             # Initialize Razorpay client with environment variables
-            client = razorpay.Client(auth=(config('RAZORPAY_KEY_ID'), config('RAZORPAY_KEY_SECRET')))
+            client = razorpay.Client(auth=(os.environ.get('RAZORPAY_KEY_ID'), os.environ.get('RAZORPAY_KEY_SECRET')))
             
             # Create a Razorpay order
             order_params = {
