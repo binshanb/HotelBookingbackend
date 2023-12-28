@@ -17,7 +17,7 @@ urlpatterns = [
     path('room-detail/<int:id>/', RoomDetailsView.as_view(), name='room-detail'),
     path('roomlistuser/', RoomListUserView.as_view(), name='room-list-user'),
     path('admin/room-list/block-unblock/<int:pk>/',BlockUnblockRoomView.as_view(), name='block_ublock-room'),
-    path('dashboard-data/', DashboardDataAPIView.as_view(), name='dashboard-data'),
+    path('admin/dashboard-data/', DashboardDataAPIView.as_view(), name='dashboard-data'),
 
     
     path('admin/edit-feature/<int:feature_id>/',EditRoomFeatureView.as_view(), name='edit-feature'),
