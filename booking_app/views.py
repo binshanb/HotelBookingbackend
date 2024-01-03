@@ -1,7 +1,10 @@
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from .models import Category,Room,RoomFeature,RoomBooking,CheckIn,Payment,Review,RoomImage,Wallet
-from .serializer import CategorySerializer,RoomSerializer,RoomFeatureSerializer,RoomBookingSerializer,PaymentSerializer,RoomAvailabilityCheckSerializer,ReviewSerializer
+from accounts.models import AccountUser
+from .serializer import CategorySerializer,RoomSerializer,RoomFeatureSerializer,RoomBookingSerializer,PaymentSerializer,RoomListSerializer,RoomAvailabilityCheckSerializer,ReviewSerializer
 from .serializer import DashboardSerializer,RoomImageSerializer,RoomCheckoutSerializer,BookingStatusSerializer,WalletSerializer,RoomBookingSerializer1
 from .permissions import IsAdminOrReadOnly
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView,RetrieveUpdateAPIView,ListCreateAPIView
@@ -11,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.generics import UpdateAPIView
+
 from django.http import JsonResponse
 from django.views import View
 from django.shortcuts import get_list_or_404
@@ -120,7 +124,7 @@ class BlockUnblockCategoryView(UpdateAPIView):
 
 class RoomListView(generics.ListCreateAPIView):
     queryset = Room.objects.all()
-    serializer_class = RoomSerializer
+    serializer_class = RoomListSerializer
 
 class RoomRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Room.objects.all()
@@ -157,8 +161,16 @@ class CreateRoomView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
+        # Retrieve the room instance created by the serializer
+        room_instance = serializer.instance
 
+        # Customize the response data to include category and features
+        response_data = serializer.data
+        response_data['category'] = room_instance.category.id  # Adjust to your model structure
+        response_data['features'] = [feature.id for feature in room_instance.features.all()]  # Adjust to your model structure
+        
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class EditRoomView(APIView):
@@ -166,6 +178,7 @@ class EditRoomView(APIView):
         try:
             room = Room.objects.get(id=room_id)
             serializer = RoomSerializer(room, data=request.data, partial=True)
+            print(serializer,"serialllll")
 
             if serializer.is_valid():
                 serializer.save()
@@ -221,9 +234,12 @@ class BlockUnblockRoomFeatureView(UpdateAPIView):
         return Response({"error": "is_blocked field not provided in request"}, status=status.HTTP_400_BAD_REQUEST)
 
        
-class EditRoomFeatureView(generics.RetrieveUpdateDestroyAPIView):
+class EditRoomFeatureView(UpdateAPIView):
+    
     queryset = RoomFeature.objects.all()
     serializer_class = RoomFeatureSerializer
+   
+    lookup_field ="id"
 
 
 # class RoomAvailabilityCheckView(generics.GenericAPIView):
@@ -379,7 +395,7 @@ class RoomBookingDetailView(generics.RetrieveAPIView):
 
 
 class BookingSuccessAPIView(APIView):
-    def get(self, request, booking_id, price):
+    def get(self, request, booking_id):
         try:
             # Assuming you have a Booking model with fields like booking_id and price
             # Retrieve the booking details from the database using the provided booking_id
@@ -387,8 +403,8 @@ class BookingSuccessAPIView(APIView):
 
             # Construct a response with booking details and additional information
             response_data = {
-                "booking_id": booking.booking_id,
-                "price": booking.price,
+                "booking_id": booking.id,
+                
                 # Include other relevant details from the booking model
             }
 
@@ -534,19 +550,42 @@ class RazorpayOrderView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# View to add a review for a specific room
-class AddReviewAPIView(APIView):
-    def post(self, request, room_id):
-        try:
-            room_review = Review.objects.get(room=room_id)
-        except Review.DoesNotExist:
-            return Response({'error': 'Room does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = ReviewSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(room=room_review, customer=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class AddReviewAPIView(APIView):
+    def post(self, request, room_id, user_id):
+        try:
+            room = get_object_or_404(Room, pk=room_id)
+            user = get_object_or_404(AccountUser, pk=user_id)
+
+            existing_review = Review.objects.filter(room=room, user=user).first()
+
+            if existing_review:
+                # If a review exists for this room and user, update it
+                serializer = ReviewSerializer(existing_review, data=request.data)
+            else:
+                # If no review exists, create a new one
+                review_data = {
+                    'room': room_id,
+                    'user': user_id,
+                    'rating': request.data.get('rating'),
+                    'comment': request.data.get('comment')
+                }
+                serializer = ReviewSerializer(data=review_data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Room.DoesNotExist:
+            return Response({'error': 'Room does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
 
 # View to get a list of reviews for a specified room
 class RoomReviewsListAPIView(APIView):

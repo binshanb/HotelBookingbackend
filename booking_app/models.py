@@ -19,7 +19,7 @@ class RoomFeature(models.Model):
 class Room(models.Model):
     title = models.CharField(max_length=30)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
-    price_per_night = models.DecimalField(max_digits=8, decimal_places=2,validators=[MinValueValidator(0)])
+    price_per_night = models.PositiveIntegerField(validators=[MinValueValidator(0)])
     room_slug = models.SlugField()
     capacity =  models.PositiveIntegerField(validators=[MinValueValidator(0)])
     room_size = models.PositiveIntegerField(validators=[MinValueValidator(0)])
@@ -142,14 +142,14 @@ class CheckOut(models.Model):
 
 class Review(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    customer = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
 
     rating = models.PositiveIntegerField(choices=((1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')))
     comment = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('room', 'customer')
+        unique_together = ('room', 'user')
 
 class Wallet(models.Model):
     user = models.OneToOneField(AccountUser, on_delete=models.CASCADE)

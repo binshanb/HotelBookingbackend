@@ -33,7 +33,6 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 
-
 # from rest_framework import serializers
 # from .models import ChatRoom, ChatMessage
 # from accounts.serializers import UserSerializer

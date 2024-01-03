@@ -99,7 +99,7 @@ class CustomTokenRefreshSerializer(TokenObtainPairSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = AccountUser
         fields = ['first_name','address','city', 'state', 'country']
 
 #<-------------------User Side End-------------->

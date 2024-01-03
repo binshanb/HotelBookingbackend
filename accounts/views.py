@@ -227,13 +227,17 @@ class SendOTP(APIView):
             return Response({'message': 'Failed to send OTP.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyOTP(APIView):
-    def post(self, request):
-        phone_number = request.data.get('phone_number')
+    def post(self, request,phone):
+    
+        print(phone,"phoneeee")
         otp = request.data.get('otp')
-        if not phone_number or not otp:
+        print(otp,"otp")
+        if not phone or not otp:
             return Response({'message':'OTP code are required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        verified =verify_otp (phone_number, otp)
+        print(otp,"otp")
+        print(phone,"phhhhh")
+        verified =verify_otp (phone, otp)
+        print(verified,"verifyyyyyy")
         if verified:
             return Response({'message': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
         else:

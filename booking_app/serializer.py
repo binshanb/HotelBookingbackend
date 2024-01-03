@@ -8,23 +8,56 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class RoomFeatureSerializer(serializers.ModelSerializer):
+    print("serialllllll")
     class Meta:
         model = RoomFeature
-        fields = '__all__'
+        fields =  '__all__'
 
 class RoomImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomImage
         fields = '__all__'
-        
-class RoomSerializer(serializers.ModelSerializer):
-    images = RoomImageSerializer(many=True, read_only=True)
-    category = CategorySerializer()
-    features = RoomFeatureSerializer(many=True)
+
+class RoomListSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(required= False)
+    features = RoomFeatureSerializer(many=True, read_only=True)
 
     class Meta:
         model = Room
         fields = '__all__'
+        
+class RoomSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    features = RoomFeatureSerializer(many=True, required=False)
+
+    class Meta:
+        model = Room
+        fields = '__all__'
+
+    def create(self, validated_data):
+        category_instance = validated_data.pop('category')
+        features_data = validated_data.pop('features', [])
+
+        category_data = {'id': category_instance.id}  # Adjust this based on your Category model structure
+
+        try:
+            # Retrieve the Category instance based on the provided data
+            category_instance, _ = Category.objects.get_or_create(**category_data)
+        except Category.DoesNotExist:
+            # If the Category instance doesn't exist, handle the exception or create it here
+            # Example: category_instance = Category.objects.create(**category_data)
+            pass
+
+        # Assign the category instance to the validated data
+        validated_data['category'] = category_instance
+
+        # Create the Room instance with the modified validated data
+        room = Room.objects.create(**validated_data)
+
+        # Assuming features are ManyToMany related, set the features
+        room.features.set(features_data)
+
+        return room
 
 
 
@@ -99,9 +132,10 @@ class CheckinSerializer(serializers.ModelSerializer):
         fields = ('phone_number', 'email', 'customer_id', 'customer_name', 'room_id', 'room_slug',)
 
 class ReviewSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Review
-            fields = '__all__'
+    class Meta:
+        model = Review
+        fields = ('room', 'user', 'rating', 'comment', 'created_at')
+        unique_together = ['room', 'user']
 class BookingStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomBooking

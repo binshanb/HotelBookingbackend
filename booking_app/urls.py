@@ -20,7 +20,7 @@ urlpatterns = [
     path('admin/dashboard-data/', DashboardDataAPIView.as_view(), name='dashboard-data'),
 
     
-    path('admin/edit-feature/<int:feature_id>/',EditRoomFeatureView.as_view(), name='edit-feature'),
+    path('admin/edit-feature/<int:id>/',EditRoomFeatureView.as_view(), name='edit-feature'),
     path('admin/add-feature/', CreateRoomFeatureView.as_view(), name='add-feature'),
     path('admin/room-feature/', RoomFeatureView.as_view(), name='room-feature'),
     path('admin/room-feature/block-unblock/<int:pk>/', BlockUnblockRoomFeatureView.as_view(), name='block_ublock-feature'),
@@ -38,7 +38,7 @@ urlpatterns = [
     path('my-bookings/<int:user_id>/', UserBookingsView.as_view(), name='my-bookings'),
     path('cancel-booking/<int:pk>/', RoomBookingCancellationView.as_view(), name='cancel-booking'),
     path('booking-report/', BookingReportView.as_view(), name='booking-report'),
-    path('booking-success/<int:booking_id>/<int:price>/',BookingSuccessAPIView.as_view(), name='booking_success_api'),
+    path('booking-success/<int:booking_id>/',BookingSuccessAPIView.as_view(), name='booking_success_api'),
 
     # path('booking-detail/<int:pk>/', RoomBookingDetailView.as_view(), name='booking-list'),
 
@@ -49,7 +49,7 @@ urlpatterns = [
     path('create-razorpay-order/', RazorpayOrderView.as_view(), name='create_razorpay_order'),
 
     # path('add-reviews/', ReviewListCreateAPIView.as_view(), name='review-list-create'),
-    path('add-review/<int:room_id>/', AddReviewAPIView.as_view(), name='add_review'),
+    path('add-review/<int:room_id>/<int:user_id>/', AddReviewAPIView.as_view(), name='add_review'),
     path('room-reviews/<int:room_id>/', RoomReviewsListAPIView.as_view(), name='room_reviews_list'),
     path('admin/booking-report/<int:year>/<int:month>/', BookingReportView.as_view(), name='booking-report'),
 
