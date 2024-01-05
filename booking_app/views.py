@@ -324,24 +324,78 @@ class RoomBookingCreateView(CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         response = {}
-        
-        serializer = self.get_serializer(data=request.data)
+        diff = self.request.data.get('diffDays')
+        number_of_guests = self.request.data.get('number_of_guests')
+        data=request.data
+        print(data,"request.data")
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
         check_in = serializer.validated_data['check_in']
         check_out = serializer.validated_data['check_out']
         room = serializer.validated_data['room']  
-
+        
+        price_per_night = room.price_per_night
+      
+        total_amount = diff * int(number_of_guests )* price_per_night
+      
         # Check for overlapping bookings
         if RoomBooking.objects.filter(room=room, check_out__gt=check_in, check_in__lt=check_out).exists():
             return Response({'message': 'Overlapping booking exists'}, status=status.HTTP_400_BAD_REQUEST)
-        self.perform_create(serializer)
         
-        headers = self.get_success_headers(serializer.data)
-        response['data'] = serializer.data
+       
+
+        
+
+        self.perform_create(serializer)
+
+        instance = serializer.instance
+        instance.total_amount = total_amount
+        instance.save()
+        serialized_data = serializer.data
+        
+        headers = self.get_success_headers(serialized_data)
+
+
+        response['data'] = serialized_data
         
         response['response'] = "Room is successfully booked"
         return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+    
+
+        
+
+
+class BookingDetailsView(APIView):
+    def get(self, request, booking_id):
+        try:
+            # Retrieve RoomBooking object based on booking_id
+            room_booking = RoomBooking.objects.get(id=booking_id)
+
+            # Calculate the number of days between check-in and check-out dates
+            num_of_days = (room_booking.check_out - room_booking.check_in).days
+
+            # Calculate the price per day
+            price_per_day = room_booking.room.price_per_night
+            num_of_guests = room_booking.number_of_guests
+            # Get total amount from the RoomBooking object
+            total_amount = room_booking.total_amount
+
+            # Prepare data to return
+            data = {
+                'booking_id': room_booking.id,
+                'num_of_days': num_of_days,
+                'price_per_day': price_per_day,
+                'num_of_guests': num_of_guests,
+                'total_amount': total_amount
+                # Add other fields if needed
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except RoomBooking.DoesNotExist:
+            return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+
     
 class CheckOverlappingBookingsView(APIView):
     def post(self, request):
@@ -365,20 +419,7 @@ class CheckOverlappingBookingsView(APIView):
         else:
             return Response({'message': 'No overlapping booking'}, status=status.HTTP_200_OK)
 
-    # def post(self, request, *args, **kwargs):
-    #     room = get_object_or_404(Room, pk=request.data['room'])
-    #     if room.is_active:
-    #         return Response({"response": "Room is already booked"}, status=status.HTTP_200_OK)
-    #     room.is_active = False
-    #     room.save()
-    #     checked_in_room = CheckIn.objects.create(
-    #         customer=request.user,
-    #         room=room,
-    #         phone_number=request.data['phone_number'],
-    #         email=request.data['email']
-    #     )
-    #     checked_in_room.save()
-    #     return self.create(request, *args, **kwargs)
+
 
 class RoomBookingListView(generics.ListAPIView):
     queryset = RoomBooking.objects.all()
@@ -389,8 +430,11 @@ class RoomBookingDetailView(generics.RetrieveAPIView):
     queryset = RoomBooking.objects.all()
     serializer_class = RoomBookingSerializer
     def get_object(self):
-        booking_id = self.kwargs['id']  # assuming 'pk' is used in URL pattern
+        booking_id = self.kwargs['id']
+        print(RoomBooking.objects.get(id=booking_id).total_amount,"kkkkooliku")
         return RoomBooking.objects.get(id=booking_id)
+
+   
     
 
 
@@ -426,22 +470,30 @@ class UserBookingsView(ListAPIView):
     
 
     
-class RoomBookingCancellationView(generics.UpdateAPIView):
-    queryset = RoomBooking.objects.all()
-    serializer_class = RoomBookingSerializer
 
-    def update(self, request, *args, **kwargs):
-      try:
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save(booking_status='cancelled')  # Update booking status
+class RoomBookingCancellationView(APIView):
+    def post(self, request, booking_id):
+        cancellation_reason = request.data.get('cancellation_reason')
+        user_id = request.data.get('user')
+        user=AccountUser.objects.get(id=user_id)
+        
+        try:
+            booking = get_object_or_404(RoomBooking, pk=booking_id, user=user)
+            booking.booking_status = 'cancelled'
+            booking.cancellation_reason = cancellation_reason
+            booking.save()
 
-        # Additional logic after cancellation (if any)...
+            # Refund the amount to the user's wallet
+            user_wallet, _ = Wallet.objects.get_or_create(user=user)
+            refund_amount = booking.total_amount  # Replace this with your booking amount field
+            user_wallet.balance += refund_amount
+            user_wallet.save()
+            print(user_wallet.balance,"balance")
 
-        return Response({'message': 'Booking cancelled successfully'}, status=status.HTTP_200_OK)
-      except RoomBooking.DoesNotExist:
+            return Response({'message': 'Booking cancelled successfully and amount refunded to wallet'}, status=status.HTTP_200_OK)
+        except RoomBooking.DoesNotExist:
             return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+
 class RoomCheckoutView(generics.UpdateAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
@@ -452,32 +504,13 @@ class BookingReportView(generics.ListAPIView):
     serializer_class = RoomBookingSerializer
 
     def get_queryset(self):
-        # Logic to filter bookings for the report based on parameters, dates, etc.
-        # Example: Fetch bookings within a date range
+   
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         if start_date and end_date:
             return RoomBooking.objects.filter(check_in__range=[start_date, end_date])
         else:
             return RoomBooking.objects.all()
-# class RoomCheckoutView(generics.UpdateAPIView):
-#     queryset = RoomBooking.objects.all()
-#     serializer_class = RoomBookingSerializer
-
-#     def patch(self, request, *args, **kwargs):
-#         booking_id = self.kwargs.get('pk')
-#         try:
-#             booking = self.get_object()
-#             if booking.booking_status == 'completed':
-#                 room = booking.room
-#                 room.is_active = True  # Set room status to active
-#                 room.save()
-#                 # Additional logic to update room availability based on the booking
-#                 return Response({'message': 'Room status updated successfully'})
-#             else:
-#                 return Response({'error': 'Booking status is not completed'}, status=status.HTTP_400_BAD_REQUEST)
-#         except RoomBooking.DoesNotExist:
-#             return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class RoomBookingPageView(generics.ListAPIView):
     queryset = RoomBooking.objects.all()
@@ -500,22 +533,7 @@ class ChangeBookingStatusView(generics.UpdateAPIView):
             return Response({'message': 'Booking status updated successfully'}, status=status.HTTP_200_OK)
         except RoomBooking.DoesNotExist:
             return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
-# class ChangeBookingStatus(APIView):
-#     def put(self, request, booking_id):
-#         booking = get_object_or_404(RoomBooking, id=booking_id)
-#         new_status = request.data.get('booking_status')
 
-#         # Update the booking status
-#         booking.booking_status = new_status
-#         booking.save()
-
-#         serializer = RoomBookingSerializer(booking)  # Adjust serializer according to your needs
-
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-# class BookingListView(generics.ListAPIView):
-#     queryset = Booking.objects.all()
-#     serializer_class = BookingSerializer
 
 class PaymentListCreateView(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
@@ -605,21 +623,25 @@ class DashboardDataAPIView(APIView):
     def get(self, request):
         # Simulated data for demonstration purposes
         pie_chart_data = [
-            {"_id": "Category A", "count": 10},
-            {"_id": "Category B", "count": 20},
+            {"_id": "Single Room Category", "count": 10},
+            {"_id": "Double Room Category", "count": 8},
+            {"_id": "Triple Room Category", "count": 7},
+            {"_id": "Family Room Category", "count": 5},
             # Add more data as needed
         ]
 
         bar_graph_data = [
-            {"_id": "Data 1", "totalTravelers": 5},
-            {"_id": "Data 2", "totalTravelers": 15},
+            {"_id": "Single Room", "totalBookings": 15},
+            {"_id": "Double Room", "totalBookings": 10},
+            {"_id": "Triple Room", "totalBookings": 9},
+            {"_id": "Family Room", "totalBookings": 11},
             # Add more data as needed
         ]
 
         statistics_data = {
-            "averagePackagePrice": 250,  # Sample statistic values
-            "totalAmount": 5000,
-            "totalMembers": 50,
+            "AverageRoomBookingPrice": 3500,  # Sample statistic values
+            "TotalBookingAmount": 560208,
+            "TotalBookings": 77,
             # Add more statistics as needed
         }
 
@@ -650,6 +672,9 @@ class BookingReportView(generics.ListAPIView):
 
         return RoomBooking.objects.filter(booking_date__gte=start_date, booking_date__lt=end_date).values('booking_date').annotate(count=Count('id')).order_by('booking_date')
     
-class WalletDetailView(generics.RetrieveAPIView):
-    queryset = Wallet.objects.all()
-    serializer_class = WalletSerializer
+class WalletDetailView(APIView):
+    def get(self, request, user_id):
+        print("enterde into wallet function")
+        wallet = get_object_or_404(Wallet, user_id=user_id)
+        serializer = WalletSerializer(wallet)
+        return Response(serializer.data)

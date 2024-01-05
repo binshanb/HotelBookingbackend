@@ -112,7 +112,7 @@ class UserSerializer(serializers.ModelSerializer):
     last_login_display = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
+        model = AccountUser
         fields = ['id','first_name','email','phone_number','address','city','state','is_active','is_superuser','image','country','date_joined','last_login_display']
 
     def get_last_login_display(self, obj):

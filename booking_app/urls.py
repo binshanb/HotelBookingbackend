@@ -35,8 +35,10 @@ urlpatterns = [
 
     path('roombooking-page/<int:id>/',RoomBookingDetailView.as_view(), name='booking-page'), 
     path('booking-list/', RoomBookingListView.as_view(), name='booking-list'),
+   
+    path('booking-details/<int:booking_id>/', BookingDetailsView.as_view(), name='booking_details'),
     path('my-bookings/<int:user_id>/', UserBookingsView.as_view(), name='my-bookings'),
-    path('cancel-booking/<int:pk>/', RoomBookingCancellationView.as_view(), name='cancel-booking'),
+    path('cancel-booking/<int:booking_id>/', RoomBookingCancellationView.as_view(), name='cancel-booking'),
     path('booking-report/', BookingReportView.as_view(), name='booking-report'),
     path('booking-success/<int:booking_id>/',BookingSuccessAPIView.as_view(), name='booking_success_api'),
 
@@ -52,7 +54,7 @@ urlpatterns = [
     path('add-review/<int:room_id>/<int:user_id>/', AddReviewAPIView.as_view(), name='add_review'),
     path('room-reviews/<int:room_id>/', RoomReviewsListAPIView.as_view(), name='room_reviews_list'),
     path('admin/booking-report/<int:year>/<int:month>/', BookingReportView.as_view(), name='booking-report'),
-
-
-
+    path('wallet/<int:user_id>/', WalletDetailView.as_view(), name='wallet-detail'),
 ]
+
+

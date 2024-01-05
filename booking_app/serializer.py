@@ -1,3 +1,4 @@
+from accounts.serializers import UserSerializer
 from .models import Category,Room,RoomFeature,RoomBooking,CheckIn,Payment,Review,RoomImage,Wallet
 from accounts.models import AccountUser
 from rest_framework import serializers
@@ -27,7 +28,7 @@ class RoomListSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class RoomSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    category =  CategorySerializer(read_only=True)
     features = RoomFeatureSerializer(many=True, required=False)
 
     class Meta:
@@ -35,10 +36,10 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def create(self, validated_data):
-        category_instance = validated_data.pop('category')
+        category_instance = validated_data.pop('category',[])
         features_data = validated_data.pop('features', [])
 
-        category_data = {'id': category_instance.id}  # Adjust this based on your Category model structure
+        category_data = {'category': category_instance.category}  # Adjust this based on your Category model structure
 
         try:
             # Retrieve the Category instance based on the provided data
@@ -64,7 +65,8 @@ class RoomSerializer(serializers.ModelSerializer):
 class RoomBookingSerializer(serializers.ModelSerializer):
     user_email = serializers.SerializerMethodField()  # Serializer method field for user email
     room_title = serializers.SerializerMethodField() 
-    price = serializers.SerializerMethodField()  
+    # total_amount = serializers.SerializerMethodField()  
+
     # Serializer method field for room title
 
     class Meta:
@@ -72,15 +74,20 @@ class RoomBookingSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_user_email(self, obj):
-        return obj.user.email if obj.user.email else None  # Access user email
+        print(obj,"kkkk")
+        print(obj.number_of_guests,"room")
+        user=obj.user
+        
+        return user.email if user.email else None  # Access user email
     
     def get_room_title(self, obj):
-        return obj.room.title if obj.room else None  # Access room title
+        room=obj.room
+        return room.title if room.title else None  # Access room title
     
     def get_price(self, obj):
         # Replace 'price_field_name' with the actual field name from your Room model
-        return obj.room.price_per_night if obj.room else None
-    
+        room=obj.room
+        return room.price_per_night if room else None
 
     def validate(self, data):
         # Ensure check_out is not before check_in
@@ -153,4 +160,4 @@ class DashboardSerializer(serializers.Serializer):
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wallet
-        fields = '__all__'
+        fields = ('user', 'balance')

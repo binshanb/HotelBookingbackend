@@ -70,6 +70,7 @@ class RoomBooking(models.Model):
     user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='bookings')
     check_in = models.DateTimeField(null=True, blank=True,default=timezone.now)
     check_out = models.DateTimeField(null=True, blank=True,default=timezone.now)
+    
     number_of_guests = models.IntegerField(null=True, blank=True)
     total_amount = models.IntegerField(default=0)
     
