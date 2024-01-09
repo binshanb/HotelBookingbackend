@@ -68,8 +68,8 @@ class Customer(models.Model):
 class RoomBooking(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='roombookings')
     user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='bookings')
-    check_in = models.DateTimeField(null=True, blank=True,default=timezone.now)
-    check_out = models.DateTimeField(null=True, blank=True,default=timezone.now)
+    check_in = models.DateTimeField(null=True, blank=True)
+    check_out = models.DateTimeField(null=True, blank=True)
     
     number_of_guests = models.IntegerField(null=True, blank=True)
     total_amount = models.IntegerField(default=0)
@@ -91,19 +91,24 @@ class RoomBooking(models.Model):
     
     def __str__(self):
 
-        ist = pytz.timezone('Asia/Kolkata')
-        
-        # Convert check-in and check-out times to IST timezone
-        ist_check_in = self.check_in.astimezone(ist)
-        ist_check_out = self.check_out.astimezone(ist)
+        formatted_check_in = self.check_in.strftime("%Y-%m-%d %I:%M %p")
+        formatted_check_out = self.check_out.strftime("%Y-%m-%d %I:%M %p")
 
-        formatted_check_in = ist_check_in.strftime("%Y-%m-%d %I:%M %p")
-        formatted_check_out = ist_check_out.strftime("%Y-%m-%d %I:%M %p")
+        return f"{self.user.email} - Check-in (UTC): {formatted_check_in}, Check-out (UTC): {formatted_check_out}"
+
+        # ist = pytz.timezone('Asia/Kolkata')
+        
+        # # Convert check-in and check-out times to IST timezone
+        # ist_check_in = self.check_in.astimezone(ist)
+        # ist_check_out = self.check_out.astimezone(ist)
+
+        # formatted_check_in = ist_check_in.strftime("%Y-%m-%d %I:%M %p")
+        # formatted_check_out = ist_check_out.strftime("%Y-%m-%d %I:%M %p")
 
         # Calculate the duration in hours between check-in and check-out
-        duration_hours = (ist_check_out - ist_check_in).total_seconds() / 3600
+        # duration_hours = (ist_check_out - ist_check_in).total_seconds() / 3600
 
-        return f"{self.user.email} - Check-in (IST): {formatted_check_in}, Check-out (IST): {formatted_check_out}, Duration: {duration_hours} hours"
+        # return f"{self.user.email} - Check-in (IST): {formatted_check_in}, Check-out (IST): {formatted_check_out}, Duration: {duration_hours} hours"
 
 class Payment(models.Model):
     PAYMENT_RAZORPAY = 'razorpay'

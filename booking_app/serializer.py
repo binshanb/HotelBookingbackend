@@ -28,37 +28,25 @@ class RoomListSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class RoomSerializer(serializers.ModelSerializer):
-    category =  CategorySerializer(read_only=True)
-    features = RoomFeatureSerializer(many=True, required=False)
+    category = CategorySerializer()
+    features = RoomFeatureSerializer(many=True)
 
     class Meta:
         model = Room
         fields = '__all__'
 
     def create(self, validated_data):
-        category_instance = validated_data.pop('category',[])
-        features_data = validated_data.pop('features', [])
-
-        category_data = {'category': category_instance.category}  # Adjust this based on your Category model structure
-
-        try:
-            # Retrieve the Category instance based on the provided data
-            category_instance, _ = Category.objects.get_or_create(**category_data)
-        except Category.DoesNotExist:
-            # If the Category instance doesn't exist, handle the exception or create it here
-            # Example: category_instance = Category.objects.create(**category_data)
-            pass
-
-        # Assign the category instance to the validated data
-        validated_data['category'] = category_instance
-
-        # Create the Room instance with the modified validated data
-        room = Room.objects.create(**validated_data)
-
-        # Assuming features are ManyToMany related, set the features
-        room.features.set(features_data)
+        category_data = validated_data.pop('category')
+        features_data = validated_data.pop('features')
+        
+        category, _ = Category.objects.get_or_create(**category_data)
+        room = Room.objects.create(category=category, **validated_data)
+        for feature_data in features_data:
+            feature, _ = RoomFeature.objects.get_or_create(**feature_data)
+            room.features.add(feature)
 
         return room
+
 
 
 

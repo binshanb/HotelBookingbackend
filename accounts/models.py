@@ -43,11 +43,7 @@ class AccountUser(AbstractBaseUser, PermissionsMixin):
     image = models.ImageField(upload_to="media/images", null=True,blank=True, default="profile-img.jpg")
     role = models.CharField(max_length=20, choices=Role.choices, default='')
 
-     # Additional fields
-    address = models.CharField(max_length=255, null=True, blank=True)
-    city = models.CharField(max_length=100, null=True, blank=True)
-    state = models.CharField(max_length=100, null=True, blank=True)
-    country = models.CharField(max_length=100, null=True, blank=True)
+ 
 
     otp = models.CharField(max_length=6, null=True, blank=True)  # Adding OTP field
 
@@ -77,55 +73,19 @@ class AccountUser(AbstractBaseUser, PermissionsMixin):
 
 
 
+
 #<---------------------------Basics Credentials-----End------------------>
+class UserProfile(models.Model):
+
+    user = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    address = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
 
 
-# class Profile(models.Model):
-#     user = models.OneToOneField(AccountUser, on_delete=models.CASCADE)
-#     full_name = models.CharField(max_length=1000)
-#     bio = models.CharField(max_length=100)
-#     image = models.ImageField(upload_to="user_images", default="default.jpg")
-#     verified = models.BooleanField(default=False)
-
-#     def save(self, *args, **kwargs):
-#         if self.full_name == "" or self.full_name == None:
-#             self.full_name = self.user.username
-#         super(Profile, self).save(*args, **kwargs)
+    def __str__(self):
+        return self.name 
 
 
-# def create_user_profile(sender, instance, created, **kwargs):
-#     if created:
-#         Profile.objects.create(user=instance)
-
-# def save_user_profile(sender, instance, **kwargs):
-#     instance.profile.save()
-
-# post_save.connect(create_user_profile, sender=AccountUser)
-# post_save.connect(save_user_profile, sender=AccountUser) 
-
-# class ChatMessage(models.Model):
-#     user = models.ForeignKey(AccountUser,on_delete=models.CASCADE,related_name="user")
-#     sender = models.ForeignKey(AccountUser,on_delete=models.CASCADE,related_name="sender")
-#     receiver = models.ForeignKey(AccountUser,on_delete=models.CASCADE,related_name="receiver")
-    
-#     message = models.CharField(max_length=1000)
-#     is_read = models.BooleanField(default=False)
-#     date = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         ordering = ['date']
-#         verbose_name_plural = "Message"
-    
-#     def __str__(self):
-#         return f"{self.sender} - {self.receiver}"
-    
-
-#     @property
-#     def sender_profile(self):
-#         sender_profile= AccountUser.objects.get(user=self.sender)
-#         return sender_profile
-    
-#     @property
-#     def receiver_profile(self):
-#         receiver_profile= AccountUser.objects.get(user=self.receiver)
-#         return receiver_profile

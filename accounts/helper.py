@@ -1,38 +1,32 @@
-# helper.py
-import os
-from twilio.rest import Client
-from twilio.base.exceptions import TwilioRestException
-from dotenv import load_dotenv
 
-load_dotenv()
+
+from twilio.rest import Client
+import os
+
+# Load Twilio credentials from environment variables
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_VERIFY_SERVICE_SID = os.environ.get('TWILIO_VERIFY_SERVICE_SID')
 
 # Initialize Twilio client
-client = Client(os.environ['TWILIO_ACCOUNT_SID'], os.environ['TWILIO_AUTH_TOKEN'])
-service = client.verify.services(os.environ['TWILIO_VERIFY_SERVICE_SID'])
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+service = client.verify.services(TWILIO_VERIFY_SERVICE_SID)
 
-# Function to send OTP to a phone number
-def send_otp(phone):
-    default_country_code = "+91"
-
-    if phone.startswith("+"):
-        formatted_phone = phone
-    else:
-        formatted_phone = default_country_code + phone
-
+# Function to send OTP via Twilio
+def send_otp(phone_number):
     try:
-        service.verifications.create(to=formatted_phone, channel='sms')
-        return True
-    except TwilioRestException as e:
-        print(f"Failed to send OTP: {e}")
-        return False
+        verification = service.verifications.create(to=phone_number, channel='sms')
+        print(verification,"verify")
+        return verification.sid
+    except Exception as e:
+        return None
 
-# Function to verify OTP code for a phone number
-def verify_otp(phone,code):
+# Function to verify OTP using Twilio
+def verify_otp(phone_number, code):
     try:
-        result = service.verification_checks.create(to=phone,code=code)
-        return result.status == 'approved'
-    except TwilioRestException as e:
-        print(f"TwilioRestException: {e}")
+        verification_check = service.verification_checks.create(to=phone_number, code=code)
+        return verification_check.status == 'approved'
+    except Exception as e:
         return False
 
 

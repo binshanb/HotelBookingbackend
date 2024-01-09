@@ -7,7 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from phonenumber_field.serializerfields import PhoneNumberField
 from django.contrib.humanize.templatetags import humanize
-from .models import Role,AccountUser
+from .models import Role,AccountUser,UserProfile
 from django.utils.timesince import timesince
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -71,6 +71,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         
 
         user = User.objects.create(
+            first_name = validated_data['first_name'],
             email = validated_data['email'],
             phone_number = validated_data['phone_number']
         )
@@ -98,9 +99,12 @@ class CustomTokenRefreshSerializer(TokenObtainPairSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+
+    user = serializers.PrimaryKeyRelatedField(queryset=AccountUser.objects.all())
+
     class Meta:
-        model = AccountUser
-        fields = ['first_name','address','city', 'state', 'country']
+        model = UserProfile
+        fields = ['user','name','address','city', 'state', 'country']
 
 #<-------------------User Side End-------------->
 
@@ -113,7 +117,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccountUser
-        fields = ['id','first_name','email','phone_number','address','city','state','is_active','is_superuser','image','country','date_joined','last_login_display']
+        fields = ['id','first_name','email','phone_number','is_active','is_superuser','image','date_joined','last_login_display']
 
     def get_last_login_display(self, obj):
         return humanize.naturaltime(obj.last_login)
@@ -153,6 +157,10 @@ class UserChangePasswordSerializer(serializers.ModelSerializer):
         user.save()
         return attrs
   
+
+class VerifyAccountSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField()
 
 
 

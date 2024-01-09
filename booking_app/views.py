@@ -14,6 +14,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.generics import UpdateAPIView
+from django.utils import timezone
+import pytz
 
 from django.http import JsonResponse
 from django.views import View
@@ -29,6 +31,7 @@ from datetime import datetime
 from django.db.models import Q
 from django.utils import timezone
 from django.db.models import Count
+from datetime import timedelta
 # # Create your views here.
 
 
@@ -152,27 +155,33 @@ class RoomDetailsView(APIView):
         return Response({'message': 'Checkout successful'}, status=status.HTTP_200_OK)
 
  
-class CreateRoomView(CreateAPIView):
-    queryset = Room.objects.all()
-    serializer_class = RoomSerializer
+# class CreateRoomView(CreateAPIView):
+#     queryset = Room.objects.all()
+#     serializer_class = RoomSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         self.perform_create(serializer)
+#         headers = self.get_success_headers(serializer.data)
         
-        # Retrieve the room instance created by the serializer
-        room_instance = serializer.instance
+#         # Retrieve the room instance created by the serializer
+#         room_instance = serializer.instance
 
-        # Customize the response data to include category and features
-        response_data = serializer.data
-        response_data['category'] = room_instance.category.id  # Adjust to your model structure
-        response_data['features'] = [feature.id for feature in room_instance.features.all()]  # Adjust to your model structure
+#         # Customize the response data to include category and features
+#         response_data = serializer.data
+#         response_data['category'] = room_instance.category.id  # Adjust to your model structure
+#         response_data['features'] = [feature.id for feature in room_instance.features.all()]  # Adjust to your model structure
         
-        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+#         return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
-
+class CreateRoomView(APIView):
+    def post(self, request, format=None):
+        serializer = RoomSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class EditRoomView(APIView):
     def put(self, request, room_id, *args, **kwargs):
         try:
@@ -222,16 +231,22 @@ class RoomFeatureView(generics.ListCreateAPIView):
 
 
 class BlockUnblockRoomFeatureView(UpdateAPIView):
-    queryset = RoomFeature.objects.all()
     serializer_class = RoomFeatureSerializer
+
+    def get_queryset(self):
+        return RoomFeature.objects.all()
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
-        if 'is_blocked' in request.data:
-            instance.is_blocked = request.data['is_blocked']
+
+        if instance:
+            instance.is_active = not instance.is_active
             instance.save()
-            return Response(RoomFeatureSerializer(instance).data, status=status.HTTP_200_OK)
-        return Response({"error": "is_blocked field not provided in request"}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
 
        
 class EditRoomFeatureView(UpdateAPIView):
@@ -338,13 +353,28 @@ class RoomBookingCreateView(CreateAPIView):
         price_per_night = room.price_per_night
       
         total_amount = diff * int(number_of_guests )* price_per_night
-      
+
+        check_in = check_in.replace(hour=12, minute=0, second=0, microsecond=0)
+        check_out = check_out.replace(hour=12, minute=0, second=0, microsecond=0)
+
+            # If the check_out is inclusive, add a day to it to make it 12:00 PM the next day
+        check_out += timedelta(days=1)
+
+# Convert the datetime objects to UTC
+        aware_check_in = timezone.localtime(check_in, timezone.utc)
+        aware_check_out = timezone.localtime(check_out, timezone.utc)
+        # Convert check-in and check-out dates to UTC before comparing or storing
+        # local_check_in = timezone.localtime(aware_check_in)
+        # local_check_out = timezone.localtime(aware_check_out) 
         # Check for overlapping bookings
-        if RoomBooking.objects.filter(room=room, check_out__gt=check_in, check_in__lt=check_out).exists():
+       
+        
+ 
+        if RoomBooking.objects.filter(room=room, check_out__gt=aware_check_in, check_in__lt=aware_check_out).exists():
             return Response({'message': 'Overlapping booking exists'}, status=status.HTTP_400_BAD_REQUEST)
         
        
-
+    
         
 
         self.perform_create(serializer)
@@ -403,14 +433,23 @@ class CheckOverlappingBookingsView(APIView):
         check_in = request.data.get('check_in')
         check_out = request.data.get('check_out')
         room_id = request.data.get('room')
+        
+        check_in_datetime = datetime.strptime(check_in[:-1], '%Y-%m-%dT%H:%M:%S.%f')
+        check_out_datetime = datetime.strptime(check_out[:-1], '%Y-%m-%dT%H:%M:%S.%f')
 
+                # Define UTC timezone
+        utc = pytz.UTC
+
+        # Convert datetime objects to UTC timezone
+        check_in_datetime = utc.localize(check_in_datetime)
+        check_out_datetime = utc.localize(check_out_datetime)
         # Check for overlapping bookings for the given room and time frame
         overlapping_bookings = RoomBooking.objects.filter(
             Q(room=room_id) &
             (
-                (Q(check_in__lt=check_in) & Q(check_out__gt=check_in)) |
-                (Q(check_in__lt=check_out) & Q(check_out__gt=check_out)) |
-                (Q(check_in__gte=check_in) & Q(check_out__lte=check_out))
+                (Q(check_in__lt=check_in_datetime) & Q(check_out__gt=check_in_datetime)) |
+                (Q(check_in__lt=check_out_datetime) & Q(check_out__gt=check_out_datetime)) |
+                (Q(check_in__gte=check_in_datetime) & Q(check_out__lte=check_out_datetime))
             )
         )
 
