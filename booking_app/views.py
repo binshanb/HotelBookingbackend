@@ -622,8 +622,8 @@ class AddReviewAPIView(APIView):
             else:
                 # If no review exists, create a new one
                 review_data = {
-                    'room': room_id,
-                    'user': user_id,
+                    'room': room.id,
+                    'user': user.user_id,
                     'rating': request.data.get('rating'),
                     'comment': request.data.get('comment')
                 }
@@ -636,6 +636,8 @@ class AddReviewAPIView(APIView):
 
         except Room.DoesNotExist:
             return Response({'error': 'Room does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except AccountUser.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

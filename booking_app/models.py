@@ -147,15 +147,15 @@ class CheckOut(models.Model):
 
 
 class Review(models.Model):
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    user = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
+        room = models.ForeignKey(Room, on_delete=models.CASCADE)
+        user = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
 
-    rating = models.PositiveIntegerField(choices=((1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')))
-    comment = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+        rating = models.PositiveIntegerField(choices=((1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')))
+        comment = models.TextField(null=True, blank=True)
+        created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('room', 'user')
+        class Meta:
+            unique_together = ('room', 'user')
 
 class Wallet(models.Model):
     user = models.OneToOneField(AccountUser, on_delete=models.CASCADE)

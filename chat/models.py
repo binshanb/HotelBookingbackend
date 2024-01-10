@@ -12,7 +12,7 @@ class ChatMessage(models.Model):
     is_read = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['-timestamp']  # Order chats by timestamp in descending order
+         ordering = ['timestamp'] # Order chats by timestamp in descending order
 
     def __str__(self):
         return f"Chat between {self.sender.email} and {self.receiver.email}"
@@ -22,8 +22,11 @@ class ChatMessage(models.Model):
 
     def is_receiver_admin(self):
         return self.receiver.is_superuser
-
-
+    @classmethod
+    def get_chat_messages(cls):
+        # Fetch chat messages ordered by timestamp in ascending order
+        chat_messages = cls.objects.all().order_by('timestamp')
+        return chat_messages
 
 
 
