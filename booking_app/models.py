@@ -21,7 +21,6 @@ class Room(models.Model):
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     price_per_night = models.PositiveIntegerField(validators=[MinValueValidator(0)])
     capacity =  models.PositiveIntegerField(validators=[MinValueValidator(0)])
-    room_slug = models.SlugField(null=True)
     room_size = models.PositiveIntegerField(validators=[MinValueValidator(0)])
     cover_image = models.ImageField(upload_to='media/media/images')
     features = models.ManyToManyField(RoomFeature)
