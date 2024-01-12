@@ -2,6 +2,8 @@ from accounts.serializers import UserSerializer
 from .models import Category,Room,RoomFeature,RoomBooking,CheckIn,Payment,Review,RoomImage,Wallet
 from accounts.models import AccountUser
 from rest_framework import serializers
+from django.db.models import Count
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,7 +11,6 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class RoomFeatureSerializer(serializers.ModelSerializer):
-    print("serialllllll")
     class Meta:
         model = RoomFeature
         fields =  '__all__'
@@ -28,27 +29,45 @@ class RoomListSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class RoomSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    features = RoomFeatureSerializer(many=True)
+    # category = CategorySerializer(read_only=True)
+    # features = RoomFeatureSerializer(many=True,read_only=True)
 
     class Meta:
         model = Room
-        fields = '__all__'
+        fields = ['title','category','price_per_night','capacity','room_size','cover_image','features','description','created_at','updated_at','is_active']
 
-    def create(self, validated_data):
-        category_data = validated_data.pop('category')
-        features_data = validated_data.pop('features')
-        
-        category, _ = Category.objects.get_or_create(**category_data)
-        room = Room.objects.create(category=category, **validated_data)
-        for feature_data in features_data:
-            feature, _ = RoomFeature.objects.get_or_create(**feature_data)
-            room.features.add(feature)
+    # def create(self, validated_data):
+    #     print(validated_data,"validste")
+    #     category_data = validated_data.pop('category')
+    #     features_data = validated_data.pop('features')
 
-        return room
+    #     # Create or get Category
+    #     category_instance = Category.objects.get(**category_data)
 
+    #     # Create Room instance with the retrieved or created Category
+    #     room = Room.objects.create(category=category_instance, **validated_data)
 
+    #     # Create or get RoomFeature instances and add them to the Room
+    #     # features_instances= [RoomFeature.objects.get(**feature_data)[0] for feature_data in features_data]
+    #     room.features.add(*features_instances)
 
+    #     return room
+
+class RoomDetailSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    features = RoomFeatureSerializer(many=True,read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ['id', 'title', 'category', 'price_per_night', 'capacity', 'room_size', 'cover_image', 'features', 'description', 'created_at', 'updated_at', 'is_active']
+
+class SingleRoomDetailSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    features = RoomFeatureSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ['id', 'title', 'category', 'price_per_night', 'capacity', 'room_size', 'cover_image', 'features', 'description', 'created_at', 'updated_at', 'is_active']
 
 class RoomBookingSerializer(serializers.ModelSerializer):
     user_email = serializers.SerializerMethodField()  # Serializer method field for user email
@@ -144,6 +163,23 @@ class DashboardSerializer(serializers.Serializer):
     pieChart = serializers.ListField(child=serializers.DictField())
     barGraph = serializers.ListField(child=serializers.DictField())
     statistics = serializers.DictField()    
+
+    def get_pieChart(self, obj):
+        # Retrieve and format pie chart data
+        # Example:
+        pie_chart_data = RoomBooking.objects.values('room__title').annotate(count=Count('id'))
+        return pie_chart_data
+
+    def get_barGraph(self, obj):
+      
+        bar_graph_data = RoomBooking.objects.values('room__title').annotate(totalBookings=Count('id'))
+        return bar_graph_data
+
+    def get_roomIndication(self, obj):
+      
+        room_indication_data = Room.objects.values('id', 'title')
+        return room_indication_data
+    
 
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:

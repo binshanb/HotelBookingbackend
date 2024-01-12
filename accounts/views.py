@@ -101,6 +101,8 @@ class UserRegistrationView(APIView):
 
     
 
+
+
 class VerifyEmail(APIView):
     permission_classes = [AllowAny]
 
@@ -112,7 +114,7 @@ class VerifyEmail(APIView):
 
             try:
                 user = AccountUser.objects.get(email=email)
-            except :
+            except AccountUser.DoesNotExist:
                 return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
             if user and user.otp == otp:
@@ -120,8 +122,10 @@ class VerifyEmail(APIView):
                 user.save()
                 return Response({"message": "Account Verified"}, status=status.HTTP_200_OK)
             else:
+                # Handle the case when OTP verification fails
                 user.is_active = False
-                return Response({"message": "Wrong Otp"}, status=status.HTTP_204_NO_CONTENT)
+                user.save()  # Save the user object after setting is_active to False
+                return Response({"message": "Wrong Otp"}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             return Response({"message": f"Something went wrong: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

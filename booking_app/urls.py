@@ -53,7 +53,7 @@ urlpatterns = [
     # path('add-reviews/', ReviewListCreateAPIView.as_view(), name='review-list-create'),
     path('add-review/<int:room_id>/<int:user_id>/', AddReviewAPIView.as_view(), name='add_review'),
     path('room-reviews/<int:room_id>/', RoomReviewsListAPIView.as_view(), name='room_reviews_list'),
-    path('admin/booking-report/<int:year>/<int:month>/', BookingReportView.as_view(), name='booking-report'),
+    path('admin/booking-report/', BookingReportAPIView.as_view(), name='booking-report'),
     path('wallet/<int:user_id>/', WalletDetailView.as_view(), name='wallet-detail'),
 ]
 

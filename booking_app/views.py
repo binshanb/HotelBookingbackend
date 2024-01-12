@@ -4,8 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from .models import Category,Room,RoomFeature,RoomBooking,CheckIn,Payment,Review,RoomImage,Wallet
 from accounts.models import AccountUser
-from .serializer import CategorySerializer,RoomSerializer,RoomFeatureSerializer,RoomBookingSerializer,PaymentSerializer,RoomListSerializer,RoomAvailabilityCheckSerializer,ReviewSerializer
-from .serializer import DashboardSerializer,RoomImageSerializer,RoomCheckoutSerializer,BookingStatusSerializer,WalletSerializer,RoomBookingSerializer1
+from .serializer import CategorySerializer,RoomSerializer,RoomFeatureSerializer,RoomBookingSerializer,PaymentSerializer,RoomListSerializer,RoomAvailabilityCheckSerializer,ReviewSerializer,RoomDetailSerializer,RoomCheckoutSerializer,SingleRoomDetailSerializer
 from .permissions import IsAdminOrReadOnly
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView,RetrieveUpdateAPIView,ListCreateAPIView
 from rest_framework.views import APIView
@@ -32,6 +31,8 @@ from django.db.models import Q
 from django.utils import timezone
 from django.db.models import Count
 from datetime import timedelta
+from django.db.models import Sum
+
 # # Create your views here.
 
 
@@ -135,19 +136,20 @@ class RoomRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
 class RoomListUserView(generics.ListCreateAPIView):
     queryset = Room.objects.all()
-    serializer_class = RoomSerializer
+    serializer_class = RoomDetailSerializer
 
 
 class RoomDetailsView(APIView):
- 
-
     queryset = Room.objects.all()
-    serializer_class = RoomSerializer
+    serializer_class = SingleRoomDetailSerializer
+
+
     def get(self, request, id):
       room = Room.objects.prefetch_related('features').get(id=id)
-      serializer = RoomSerializer([room],many = True)
+      serializer = SingleRoomDetailSerializer([room],many = True)
       print(room.cover_image,'oooooooooooooooo')
       return Response(serializer.data,status= status.HTTP_200_OK) 
+    
     def put(self, request, *args, **kwargs):
         room = self.get_object()
         room.is_booked = False
@@ -177,6 +179,7 @@ class RoomDetailsView(APIView):
 
 class CreateRoomView(APIView):
     def post(self, request, format=None):
+        print(request.data,"datataa")
         serializer = RoomSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -661,31 +664,30 @@ class RoomReviewsListAPIView(APIView):
 
 
 class DashboardDataAPIView(APIView):
-    def get(self, request):
-        # Simulated data for demonstration purposes
-        pie_chart_data = [
-            {"_id": "Single Room Category", "count": 10},
-            {"_id": "Double Room Category", "count": 8},
-            {"_id": "Triple Room Category", "count": 7},
-            {"_id": "Family Room Category", "count": 5},
-            # Add more data as needed
-        ]
+     def get(self, request):
+        pie_chart_data = RoomBooking.objects.values ('room__category__category_name', 
+            'room__category__id',
+    
+        ).annotate(count=Count('id'))
 
-        bar_graph_data = [
-            {"_id": "Single Room", "totalBookings": 15},
-            {"_id": "Double Room", "totalBookings": 10},
-            {"_id": "Triple Room", "totalBookings": 9},
-            {"_id": "Family Room", "totalBookings": 11},
-            # Add more data as needed
-        ]
+        # Calculate bar graph data dynamically
+        bar_graph_data = RoomBooking.objects.values( 'room__title', 
+            'room__id',  # Include room ID
+        ).annotate(totalBookings=Count('id'))
 
+        # Calculate statistics data dynamically
         statistics_data = {
-            "AverageRoomBookingPrice": 3500,  # Sample statistic values
-            "TotalBookingAmount": 560208,
-            "TotalBookings": 77,
-            # Add more statistics as needed
+            "AverageRoomBookingPrice": RoomBooking.objects.aggregate(avg_price=Sum('room__price_per_night'))['avg_price'] or 0,
+            "TotalBookingAmount": RoomBooking.objects.aggregate(total_amounts=Sum('total_amount'))['total_amounts'] or 0,
+            "TotalBookings": RoomBooking.objects.count(),
         }
 
+        room_indication = {}
+        for room_booking in RoomBooking.objects.all():
+            room_id = room_booking.room.id
+            category_name = room_booking.room.category.category_name
+            # Assign indication details to room ID or category name
+            room_indication[room_id] = {'category_name': category_name, 'indication': 'some_color'}
         # Constructing the data into the serializer
         serializer_data = {
             'pieChart': pie_chart_data,
@@ -699,19 +701,20 @@ class DashboardDataAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
-class BookingReportView(generics.ListAPIView):
-    serializer_class = RoomBookingSerializer
+class BookingReportAPIView(APIView):
+    def get(self, request):
+        # Get total booking counts and total amount based on room category
+        category_data = RoomBooking.objects.values('room__category__category_name') \
+            .annotate(booking_count=Count('id'), total_amount=Sum('total_amount'))
 
-    def get_queryset(self):
-        year = int(self.kwargs.get('year'))
-        month = int(self.kwargs.get('month'))
-        
-        start_date = datetime(year, month, 1)
-        next_month = month + 1 if month < 12 else 1
-        next_year = year + 1 if month == 12 else year
-        end_date = datetime(next_year, next_month, 1)
+        # Construct the response data
+        response_data = {
+            'categoryData': category_data,
+            # Add other data as needed
+        }
 
-        return RoomBooking.objects.filter(booking_date__gte=start_date, booking_date__lt=end_date).values('booking_date').annotate(count=Count('id')).order_by('booking_date')
+        return Response(response_data, status=status.HTTP_200_OK)
+
     
 class WalletDetailView(APIView):
     def get(self, request, user_id):

@@ -20,7 +20,6 @@ class Room(models.Model):
     title = models.CharField(max_length=30)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     price_per_night = models.PositiveIntegerField(validators=[MinValueValidator(0)])
-    room_slug = models.SlugField()
     capacity =  models.PositiveIntegerField(validators=[MinValueValidator(0)])
     room_size = models.PositiveIntegerField(validators=[MinValueValidator(0)])
     cover_image = models.ImageField(upload_to='media/media/images')

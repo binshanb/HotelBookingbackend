@@ -30,7 +30,7 @@ urlpatterns = [
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('forgot-password-otp/', ForgotPasswordOTPView.as_view(), name='forgot-password-otp'),
     path('change-password/', UserChangePasswordView.as_view(), name='change-password'),
-    path('reset-password/', ResetPasswordAPIView.as_view(), name='reset_password'),
+    path('reset-password/', ResetPasswordAPIView.as_view(), name='reset_password_api'),
 
    
    
