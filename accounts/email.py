@@ -3,6 +3,7 @@ from django.core.mail import send_mail
 import random
 from django.conf import settings
 from .models import AccountUser
+from django.shortcuts import get_object_or_404
 
 
 def send_otp_via_email(subject, message, from_email, recipient_list):
@@ -20,6 +21,6 @@ def set_otp_via_email(email):
     # Corrected the function call to send_otp_via_email
     send_otp_via_email(subject, message, email_from, recipient_list)
 
-    user_obj = AccountUser.objects.get(email=email)
+    user_obj = get_object_or_404(AccountUser, email=email)
     user_obj.otp = otp
     user_obj.save()
