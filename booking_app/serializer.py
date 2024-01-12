@@ -137,13 +137,13 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class CheckinSerializer(serializers.ModelSerializer):
     room_id = serializers.IntegerField(source='room.pk')
-    room_slug = serializers.SlugField(source='room.room_slug')
+  
     customer_id = serializers.IntegerField(source='customer.pk')
     customer_name = serializers.CharField(source='customer.username')
 
     class Meta:
         model = CheckIn
-        fields = ('phone_number', 'email', 'customer_id', 'customer_name', 'room_id', 'room_slug',)
+        fields = ('phone_number', 'email', 'customer_id', 'customer_name', 'room_id')
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
