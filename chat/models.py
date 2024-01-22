@@ -17,7 +17,7 @@ class ChatMessage(models.Model):
     user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='sent_messages',default="")
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages',default="")
     is_seen = models.BooleanField(default=False)
 
     def __str__(self):
