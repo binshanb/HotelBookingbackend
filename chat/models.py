@@ -14,7 +14,7 @@ class ChatRoom(models.Model):
         return self.name
 
 class ChatMessage(models.Model):
-    user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='sent_messages',null=True)
+    user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='sent_messages',default=2)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
