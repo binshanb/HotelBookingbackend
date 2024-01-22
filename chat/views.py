@@ -1,78 +1,285 @@
 # views.py
+
+from rest_framework import generics
 from rest_framework.views import APIView
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import ChatMessage
-from .serializer import ChatSerializer
-from .models import AccountUser  # Ensure to import your AccountUser model
+from .models import ChatRoom, ChatMessage
+from .serializer import ChatRoomSerializer, MessageSerializer,UnseenMessagesCountSerializer,MessageCountSerializer
+from django.shortcuts import get_object_or_404
+from accounts.models import AccountUser
+from django.http import JsonResponse
 
-class ChatListCreateAPIView(APIView):
-    def post(self, request):
-        sender_id = request.data.get('sender_id')
-        receiver_id = request.data.get('receiver_id')
-        message = request.data.get('message')
+class CreateRoomView(CreateAPIView):
+    serializer_class = ChatRoomSerializer
+
+    def create(self, request, *args, **kwargs):
+        print(request,"reqqqqqqqq")
+        # care_home_id = request.data.get('care_home_id')
+        user_id = request.data.get('user_id')
+        print(user_id,"userid")
+        provider_id = request.data.get('provider_id')
+        print(provider_id,"providerid")
+        username=request.data.get('username')
+        print(username,"username")
+
+        # Construct a more unique room name using both care_home_id and user_id
+        room_name = f"AccountUser_{provider_id}_{user_id}"
+        print(room_name,"roomname")
+
+        # Check if the room already exists
+        existing_room = ChatRoom.objects.filter(name=room_name).first()
+      
+        if existing_room:
+            print('alredy have ')
+            return Response(ChatRoomSerializer(existing_room).data, status=status.HTTP_200_OK)
         
-
-        if not message:
-           return Response("Message content is required", status=status.HTTP_400_BAD_REQUEST)
-
         try:
-            sender = AccountUser.objects.get(id=sender_id)
-            receiver = AccountUser.objects.get(id=receiver_id)
-
-            chat_message = ChatMessage.objects.create(
-                sender=sender,
-                receiver=receiver,
-                message=message
-            )
-
-            # Update other fields if necessary
-
-            serializer = ChatSerializer(chat_message)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            provider = AccountUser.objects.get(id=provider_id)
         
         except AccountUser.DoesNotExist:
-            return Response("Invalid sender or receiver", status=status.HTTP_400_BAD_REQUEST)
-
-    def get(self, request):
-        chats = ChatMessage.objects.all()
-        serializer = ChatSerializer(chats, many=True)
-        return Response(serializer.data)
-
-    def put(self, request, chat_id):
-        try:
-            chat = ChatMessage.objects.get(id=chat_id)
-            serializer = ChatSerializer(chat, data=request.data)
-            
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        except ChatMessage.DoesNotExist:
-            return Response("Chat not found", status=status.HTTP_404_NOT_FOUND)
-
-
-
+            return Response({"error": "Provider not found."}, status=status.HTTP_400_BAD_REQUEST)
         
 
-    def get(self, request):
-        # Get all chats
-        chats = ChatMessage.objects.all()
-        serializer = ChatSerializer(chats, many=True)
-        return Response(serializer.data)
+        # Create room
+        room = ChatRoom(name=room_name,provider=provider,username=username)
+        room.save()
+        print(room,"chatroom")
 
-    def put(self, request, chat_id):
-        # Update a chat message
-        try:
-            chat = ChatMessage.objects.get(id=chat_id)
-            serializer = ChatSerializer(chat, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except ChatMessage.DoesNotExist:
-            return Response("Chat not found", status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatRoomSerializer(room)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class MessageList(generics.ListCreateAPIView):
+    queryset = ChatMessage.objects.all()
+    serializer_class = MessageSerializer
+
+
+class Last50MessagesView(generics.ListAPIView):
+    serializer_class = MessageSerializer
+
+    def get_queryset(self):
+        room_name = self.kwargs['room_name']
+        room = get_object_or_404(ChatRoom, name=room_name)
+        return ChatMessage.objects.filter(room=room).order_by('timestamp')[:50]
+
+
+class ProviderChatRoomsView(generics.ListAPIView):
+    serializer_class = ChatRoomSerializer
+
+    def get_queryset(self):
+        provider_id = self.kwargs['provider_id']
+        return ChatRoom.objects.filter(provider__id=provider_id)
+    
+
+class UnseenMessagesCountView(APIView):
+    @staticmethod
+    def get(request, room_id):
+        room = get_object_or_404(ChatRoom, id=room_id)
+        unseen_count = room.messages.filter(is_seen=False).count()
+
+        serializer = UnseenMessagesCountSerializer({'unseen_count': unseen_count})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class MarkMessagesAsSeenView(generics.UpdateAPIView):
+    queryset = ChatMessage.objects.all()
+    serializer_class = MessageSerializer
+
+    def update(self, request, *args, **kwargs):
+        room_id = kwargs.get('room_id')
+        room = get_object_or_404(ChatRoom, id=room_id)
+        messages = room.messages.filter(is_seen=False)
+        
+        # Mark messages as seen
+        messages.update(is_seen=True)
+
+        return Response({'success': True})
+    
+
+class TotalMessageCountView(generics.ListAPIView):
+    serializer_class = MessageCountSerializer
+
+    def get_queryset(self):
+        provider_id = self.kwargs['provider_id']
+        rooms = ChatRoom.objects.filter(provider__id=provider_id)
+        total_message_count = ChatMessage.objects.filter(room__in=rooms,is_seen=False).count()
+
+        return [{'provider_id': provider_id, 'total_message_count': total_message_count}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # views.py
+
+# from rest_framework import generics
+# from rest_framework.views import APIView
+# from rest_framework.generics import CreateAPIView
+# from rest_framework.response import Response
+# from rest_framework import status
+# from .models import ChatRoom, Message
+# from .serializer import ChatRoomSerializer, MessageSerializer,UnseenMessagesCountSerializer,MessageCountSerializer
+# from django.shortcuts import get_object_or_404
+# from accounts.models import AccountUser
+# from django.http import JsonResponse
+
+# class CreateChatRoomView(CreateAPIView):
+#     serializer_class = ChatRoomSerializer
+
+#     def create(self, request, *args, **kwargs):
+#         user_id = request.data.get('user_id')
+#         provider_id = request.data.get('provider_id')
+#         username=request.data.get('username')
+#         print(username)
+
+#         # Construct a more unique room name using both care_home_id and user_id
+#         chatroom_name = f"AccountUser_{user_id}"
+
+#         # Check if the room already exists
+#         existing_room = ChatRoom.objects.filter(name=chatroom_name).first()
+#         if existing_room:
+#             print('already have ')
+#             return Response(ChatRoomSerializer(existing_room).data, status=status.HTTP_200_OK)
+        
+#         try:
+#             provider = AccountUser.objects.get(id=provider_id)
+#         except AccountUser.DoesNotExist:
+#             return Response({"error": "Provider not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+#         # Create room
+#         chatroom = ChatRoom(name=chatroom_name,provider=provider,username=username)
+#         chatroom.save()
+
+#         serializer = ChatRoomSerializer(chatroom)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+# class MessageList(generics.ListCreateAPIView):
+#     queryset = Message.objects.all()
+#     serializer_class = MessageSerializer
+
+
+# class Last50MessagesView(generics.ListAPIView):
+#     serializer_class = MessageSerializer
+
+#     def get_queryset(self):
+#         chatroom_name = self.kwargs['chatroom_name']
+#         chatroom = get_object_or_404(ChatRoom, name=chatroom_name)
+#         return Message.objects.filter(chatroom=chatroom).order_by('timestamp')[:50]
+
+
+# class ProviderChatRoomsView(generics.ListAPIView):
+    
+#     serializer_class = ChatRoomSerializer
+
+#     def get_queryset(self):
+#         provider_id = self.kwargs['provider_id']
+#         return ChatRoom.objects.filter(provider__id=provider_id)
+    
+
+# class UnseenMessagesCountView(APIView):
+#     @staticmethod
+#     def get(request, chatroom_id):
+#         chatroom = get_object_or_404(ChatRoom, id=chatroom_id)
+#         unseen_count = chatroom.messages.filter(is_seen=False).count()
+
+#         serializer = UnseenMessagesCountSerializer({'unseen_count': unseen_count})
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# class MarkMessagesAsSeenView(generics.UpdateAPIView):
+#     queryset = Message.objects.all()
+#     serializer_class = MessageSerializer
+
+#     def update(self, request, *args, **kwargs):
+#         chatroom_id = kwargs.get('room_id')
+#         chatroom = get_object_or_404(ChatRoom, id=chatroom_id)
+#         messages = chatroom.messages.filter(is_seen=False)
+        
+#         # Mark messages as seen
+#         messages.update(is_seen=True)
+
+#         return Response({'success': True})
+    
+
+# class TotalMessageCountView(generics.ListAPIView):
+#     serializer_class = MessageCountSerializer
+
+#     def get_queryset(self):
+#         provider_id = self.kwargs['provider_id']
+#         chatrooms = ChatRoom.objects.filter(provider__id=provider_id)
+#         total_message_count = Message.objects.filter(room__in=chatrooms,is_seen=False).count()
+
+#         return [{'provider_id': provider_id, 'total_message_count': total_message_count}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

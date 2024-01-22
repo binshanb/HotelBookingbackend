@@ -1,32 +1,99 @@
-# models.py
+#models.py
 
 
 from django.db import models
 from accounts.models import AccountUser
 
-class ChatMessage(models.Model):
-    sender = models.ForeignKey(AccountUser, related_name='sent_chats', on_delete=models.CASCADE)
-    receiver = models.ForeignKey(AccountUser, related_name='received_chats', on_delete=models.CASCADE)
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
 
-    class Meta:
-         ordering = ['timestamp'] # Order chats by timestamp in descending order
+class ChatRoom(models.Model):
+    name = models.CharField(max_length=255, unique=True,default="")
+    provider= models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='provider_room',default="")
+    username= models.CharField(max_length=255,default="")
 
     def __str__(self):
-        return f"Chat between {self.sender.email} and {self.receiver.email}"
+        return self.name
 
-    def is_sender_admin(self):
-        return self.sender.is_superuser
+class ChatMessage(models.Model):
+    user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='sent_messages',default="")
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    is_seen = models.BooleanField(default=False)
 
-    def is_receiver_admin(self):
-        return self.receiver.is_superuser
-    @classmethod
-    def get_chat_messages(cls):
-        # Fetch chat messages ordered by timestamp in ascending order
-        chat_messages = cls.objects.all().order_by('timestamp')
-        return chat_messages
+    def __str__(self):
+        return f"{self.user.first_name} to {self.room.name}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# from django.db import models
+# from accounts.models import AccountUser
+
+
+# class ChatRoom(models.Model):
+#     name = models.CharField(max_length=255, unique=True)
+#     provider= models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='provider_room')
+#     username= models.CharField(max_length=255)
+
+#     def __str__(self):
+#         return self.name
+
+# class Message(models.Model):
+#     user = models.ForeignKey(AccountUser, on_delete=models.CASCADE, related_name='sent_messages')
+#     content = models.TextField()
+#     timestamp = models.DateTimeField(auto_now_add=True)
+#     chatroom = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+#     is_seen = models.BooleanField(default=False)
+
+#     def __str__(self):
+#         return f"{self.user.first_name} to {self.chatroom.name}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

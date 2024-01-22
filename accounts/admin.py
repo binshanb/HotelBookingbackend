@@ -13,7 +13,7 @@ class AccountUserAdmin(UserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name' ,'role', 'phone_number', 'image', 'address', 'city', 'state', 'country')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
     )
-
+    UserAdmin.fieldsets[1][1]['fields'] = ('first_name', 'last_name' ,'role', 'phone_number', 'image')
 
 # class UserProfileAdmin(admin.ModelAdmin):
 #     list_display = ('user', 'address')

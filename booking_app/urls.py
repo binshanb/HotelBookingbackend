@@ -25,8 +25,7 @@ urlpatterns = [
     path('admin/room-feature/', RoomFeatureView.as_view(), name='room-feature'),
     path('admin/room-feature/block-unblock/<int:pk>/', BlockUnblockRoomFeatureView.as_view(), name='block_ublock-feature'),
     path('get-available-rooms/', AvailableRoomsView.as_view(), name='get_available_rooms'),
-    # path('admin/room-images/', RoomImageListCreateView.as_view(), name='room-images-list'),
-    # path('admin/room-images/<int:pk>/', RoomImageDetailView.as_view(), name='room-images-details'),
+   
    
 
 

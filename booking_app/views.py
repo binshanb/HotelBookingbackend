@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from .models import Category,Room,RoomFeature,RoomBooking,CheckIn,Payment,Review,RoomImage,Wallet
 from accounts.models import AccountUser
-from .serializer import CategorySerializer,RoomSerializer,RoomFeatureSerializer,RoomBookingSerializer,PaymentSerializer,RoomListSerializer,RoomAvailabilityCheckSerializer,ReviewSerializer,RoomDetailSerializer,RoomCheckoutSerializer,SingleRoomDetailSerializer
+from .serializer import CategorySerializer,RoomSerializer,WalletSerializer,RoomFeatureSerializer,RoomBookingSerializer,PaymentSerializer,RoomListSerializer,RoomAvailabilityCheckSerializer,ReviewSerializer,RoomDetailSerializer,RoomCheckoutSerializer,SingleRoomDetailSerializer,DashboardSerializer
 from .permissions import IsAdminOrReadOnly
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView,RetrieveUpdateAPIView,ListCreateAPIView
 from rest_framework.views import APIView
@@ -626,7 +626,7 @@ class AddReviewAPIView(APIView):
                 # If no review exists, create a new one
                 review_data = {
                     'room': room.id,
-                    'user': user.user_id,
+                    'user': user.id,
                     'rating': request.data.get('rating'),
                     'comment': request.data.get('comment')
                 }

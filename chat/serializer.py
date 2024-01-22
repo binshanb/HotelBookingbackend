@@ -1,10 +1,90 @@
-from rest_framework import serializers
-from .models import ChatMessage
+# serializers.py
 
-class ChatSerializer(serializers.ModelSerializer):
+from rest_framework import serializers
+from .models import ChatMessage, ChatRoom
+
+class ChatRoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatRoom
+        fields ='__all__'
+
+class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
-        fields = '__all__'
+        fields = ['id', 'user', 'content', 'timestamp','is_seen']
+
+    # # You can include serializers for the sender and receiver fields if needed
+    # sender = serializers.StringRelatedField()
+    # receiver = serializers.StringRelatedField()
+
+class UnseenMessagesCountSerializer(serializers.Serializer):
+    unseen_count = serializers.IntegerField()
+
+class MessageCountSerializer(serializers.Serializer):
+    provider_id = serializers.IntegerField()
+    total_message_count = serializers.IntegerField()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # serializers.py
+
+# from rest_framework import serializers
+# from .models import Message, ChatRoom
+
+# class ChatRoomSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ChatRoom
+#         fields ='__all__'
+
+# class MessageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Message
+#         fields = ['id', 'user', 'content', 'timestamp','is_seen']
+
+ 
+
+# class UnseenMessagesCountSerializer(serializers.Serializer):
+#     unseen_count = serializers.IntegerField()
+
+# class MessageCountSerializer(serializers.Serializer):
+#     _id = serializers.IntegerField()
+#     total_message_count = serializers.IntegerField()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

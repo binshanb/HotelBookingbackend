@@ -1,13 +1,66 @@
-# urls.py
-
 from django.urls import path
-from .views import ChatListCreateAPIView
+from . import views
+from .views import Last50MessagesView,ProviderChatRoomsView,UnseenMessagesCountView,MarkMessagesAsSeenView,TotalMessageCountView
 
 urlpatterns = [
-    path('chat-messages/', ChatListCreateAPIView.as_view(), name='chat-list-create'),  # Maps to POST and GET methods
-    path('chat-messages/<int:chat_id>/', ChatListCreateAPIView.as_view(), name='chat-detail'),  # Maps to PUT method
-    
+    path('chat-rooms/', views.CreateRoomView.as_view(), name='room-list'),
+    path('messages/', views.MessageList.as_view(), name='message-list'),
+    path('last-50-messages/<str:room_name>/', Last50MessagesView.as_view(), name='last-50-messages'),
+    path('provider-chat-rooms/<int:provider_id>/', ProviderChatRoomsView.as_view(), name='provider-chat-rooms'),
+    path('unseen-messages-count/<int:room_id>/', UnseenMessagesCountView.as_view(), name='unseen_messages_count'),
+    path('mark-messages-as-seen/<int:room_id>/', MarkMessagesAsSeenView.as_view(), name='mark_messages_as_seen'),
+    path('total-message-count/<int:provider_id>/', TotalMessageCountView.as_view(), name='total_message_count'),
 ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# from django.urls import path
+# from . import views
+# from .views import Last50MessagesView,ProviderChatRoomsView,UnseenMessagesCountView,MarkMessagesAsSeenView,TotalMessageCountView
+
+# urlpatterns = [
+#     path('chat-rooms/', views.CreateChatRoomView.as_view(), name='room-list'),
+#     path('messages/', views.MessageList.as_view(), name='message-list'),
+#     path('last-50-messages/<str:chatroom_name>/', Last50MessagesView.as_view(), name='last-50-messages'),
+#     path('provider-chat-rooms/<int:provider_id>/', ProviderChatRoomsView.as_view(), name='provider-chat-rooms'),
+#     path('unseen-messages-count/<int:chatroom_id>/', UnseenMessagesCountView.as_view(), name='unseen_messages_count'),
+#     path('mark-messages-as-seen/<int:chatroom_id>/', MarkMessagesAsSeenView.as_view(), name='mark_messages_as_seen'),
+#     path('total-message-count/<int:provider_id>/', TotalMessageCountView.as_view(), name='total_message_count'),
+# ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
