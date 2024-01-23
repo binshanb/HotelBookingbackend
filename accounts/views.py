@@ -1,42 +1,38 @@
-from django.shortcuts import render
+
 from rest_framework.response import Response
-from django.db.models import Subquery,OuterRef,Q
-from rest_framework.decorators import api_view
+
+
 from rest_framework.views import APIView
-from rest_framework import generics,permissions
-from rest_framework.generics import UpdateAPIView,RetrieveAPIView
-from django.shortcuts import get_object_or_404
-from django.core.mail import send_mail
+from rest_framework import generics
+from rest_framework.generics import UpdateAPIView
+
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
-from django.urls import reverse
-# from .utils import Util
-from drf_yasg import openapi
+
+
+
 import jwt
 from rest_framework import status
-from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
+
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .serializers import UserRegisterSerializer,UserChangePasswordSerializer,ForgotPasswordSerializer
+from .serializers import UserRegisterSerializer,UserChangePasswordSerializer
 from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
+
 from rest_framework_simplejwt.views import TokenObtainPairView ,TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import AccountUser,UserProfile
 from .serializers import UserProfileSerializer
 import random
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+
+
+
+
+
 from .renderers import AccountUserRenderer
 from rest_framework.authtoken.models import Token
 
-from .helper import send_otp,verify_otp
 from . import helper
-
-from twilio.rest import Client
-from django.db import IntegrityError
 from .email import *
 
 
@@ -60,19 +56,7 @@ class GetRoutesView(APIView):
         return Response(routes)
     
 
-#<---------------------------User Side-------------------->
 
-# class UserRegistrationView(APIView):
-
-#     def post(self,request):
-#         serializer = UserRegisterSerializer(data=request.data)
-#         if serializer.is_valid(raise_exception = True):
-#             try:
-#                 user = serializer.save()
-#                 send_otp_via_email(serializer.data['email'])
-#                 return Response(UserRegisterSerializer(user).data, status=status.HTTP_201_CREATED)
-#             except IntegrityError:
-#                 return Response({"IntegrityError": True}, status=status.HTTP_400_BAD_REQUEST)
             
 
 
@@ -96,7 +80,7 @@ class UserRegistrationView(APIView):
             set_otp_via_email(serializer.data['email'])
 
             return Response({'msg':"reg sucess"},status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors,{'msg':"extra "},status=status.HTTP_400_BAD_REQUEST)
 
 
     
@@ -208,12 +192,7 @@ class BlockUnblockUserView(UpdateAPIView):
 
 #<------------------------------User Profile----------------------->
 
-# class UserProfileView(generics.RetrieveUpdateAPIView):
-#     serializer_class = UserProfileSerializer
-#     permission_classes = [permissions.IsAuthenticated]
 
-#     def get_object(self):
-#         return self.request.user
         
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
