@@ -1,24 +1,16 @@
 
 from rest_framework.response import Response
-
-
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.generics import UpdateAPIView
 
-
-from django.contrib.auth import get_user_model
+ 
 from django.contrib.auth.hashers import check_password
-
-
-
 import jwt
 from rest_framework import status
-
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import UserRegisterSerializer,UserChangePasswordSerializer
 from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer
-
 from rest_framework_simplejwt.views import TokenObtainPairView ,TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import AccountUser,UserProfile
@@ -37,7 +29,7 @@ from .email import *
 
 
 
-User = get_user_model()
+
 
 
 class GetRoutesView(APIView):
@@ -67,7 +59,7 @@ class UserRegistrationView(APIView):
 
     def post(self,request,format=None):
         copy = request.data
-        otp = ''.join(random.choices('0123456789', k=6))
+        otp = ''.join(random.choices('0123456789', k=4))
         copy['otp'] = otp
         copy['is_active'] = False
         
