@@ -163,6 +163,12 @@ class VerifyAccountSerializer(serializers.Serializer):
     otp = serializers.CharField()
 
 
+class GetUserSerializer(serializers.ModelSerializer):
+     class Meta:
+        model = AccountUser
+        fields = '__all__'
+
+
 
 
 

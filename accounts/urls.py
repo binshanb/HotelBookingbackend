@@ -3,7 +3,7 @@ from . import views
 from .views import  UserRegistrationView,GetRoutesView,UserProfileView,AddProfileAPIView #UserTokenView AdminTokenObtainPairView
 from .views import CustomTokenObtainPairView, CustomTokenRefreshView,UserListView,BlockUnblockUserView,UserProfileDetailView,EditProfileAPIView
     
-from .views import  ForgotPasswordView,ForgotPasswordOTPView,ResetPasswordAPIView,UserChangePasswordView,EmailVerificationFailed,VerifyEmail
+from .views import  ForgotPasswordView,ForgotPasswordOTPView,ResetPasswordAPIView,UserChangePasswordView,EmailVerificationFailed,VerifyEmail,UserSearchAPIView
 from .views import OtpSent, OtpVerify
 
 urlpatterns = [
@@ -20,6 +20,7 @@ urlpatterns = [
     path('user/detail-view/<int:pk>/',UserProfileDetailView.as_view(), name='user-detail'),
     path('user/add-profile/', AddProfileAPIView.as_view(), name='add-profile'),
     path('user/edit-profile/<int:user_id>/', EditProfileAPIView.as_view(), name='update-profile'),
+    path('admin/search/', UserSearchAPIView.as_view(), name='search'),
     # other URL patterns...    path('user/update-profile/<int:user_id>', UserProfileUpdateView.as_view(), name='user-updation'),
 
     path('sent-otp/',OtpSent.as_view(),name='sentotp'),

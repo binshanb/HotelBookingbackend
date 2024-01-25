@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.generics import UpdateAPIView
+from django.db.models import Q
 
  
 from django.contrib.auth.hashers import check_password
@@ -10,7 +11,7 @@ import jwt
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import UserRegisterSerializer,UserChangePasswordSerializer
-from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer
+from .serializers import CustomTokenObtainPairSerializer,CustomTokenRefreshSerializer,UserSerializer,GetUserSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView ,TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import AccountUser,UserProfile
@@ -361,5 +362,21 @@ class OtpVerify(APIView):
                 return Response({'message': "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         except AccountUser.DoesNotExist:
             return Response({'message': "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class UserSearchAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        query = request.query_params.get('query', None)
+
+        if not query:
+            return Response({'error': 'Query parameter "query" is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = AccountUser.objects.filter(
+            Q(first_name__icontains=query) | Q(email__icontains=query)
+        ).exclude(pk=request.user.id)
+
+        serializer = GetUserSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
         
 
