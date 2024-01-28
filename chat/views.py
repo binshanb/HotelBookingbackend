@@ -21,10 +21,10 @@ class CreateRoomView(CreateAPIView):
         print(user_id,"userid")
         provider_id = request.data.get('provider_id')
         print(provider_id,"providerid")
-        username=request.data.get('username')
-        print(username,"username")
+        first_name=request.data.get('first_name')
+        print(first_name,"firstname")
 
-        # Construct a more unique room name using both care_home_id and user_id
+        # Construct a more unique room name using both provider_id and user_id
         room_name = f"AccountUser_{provider_id}_{user_id}"
         print(room_name,"roomname")
 
@@ -43,7 +43,7 @@ class CreateRoomView(CreateAPIView):
         
 
         # Create room
-        room = ChatRoom(name=room_name,provider=provider,username=username)
+        room = ChatRoom(name=room_name,provider=provider,username=first_name)
         room.save()
         print(room,"chatroom")
 
