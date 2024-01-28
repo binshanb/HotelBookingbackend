@@ -72,6 +72,7 @@ class UserRegistrationView(APIView):
             user.save()
             set_otp_via_email(serializer.data['email'])
 
+
             return Response({'msg':"reg sucess"},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,{'msg':"extra "},status=status.HTTP_400_BAD_REQUEST)
 
@@ -141,6 +142,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['phone_number'] = user.phone_number
 
         print(token)
+        
+        
         return token
 
        

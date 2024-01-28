@@ -21,8 +21,9 @@ class CreateRoomView(CreateAPIView):
         print(user_id,"userid")
         provider_id = request.data.get('provider_id')
         print(provider_id,"providerid")
-        first_name=request.data.get('first_name')
-        print(first_name,"firstname")
+        name = AccountUser.objects.get(id=user_id).first_name
+       
+        print(name,"firstname")
 
         # Construct a more unique room name using both provider_id and user_id
         room_name = f"AccountUser_{provider_id}_{user_id}"
@@ -43,7 +44,7 @@ class CreateRoomView(CreateAPIView):
         
 
         # Create room
-        room = ChatRoom(name=room_name,provider=provider,username=first_name)
+        room = ChatRoom(name=room_name,provider=provider,username=user_id)
         room.save()
         print(room,"chatroom")
 
@@ -68,8 +69,9 @@ class ProviderChatRoomsView(generics.ListAPIView):
     serializer_class = ChatRoomSerializer
 
     def get_queryset(self):
-        provider_id = self.kwargs['provider_id']
-        return ChatRoom.objects.filter(provider__id=provider_id)
+        user_id = self.kwargs['user_id']
+    
+        return ChatRoom.objects.filter(username=user_id)
     
 
 class UnseenMessagesCountView(APIView):
