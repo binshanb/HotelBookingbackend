@@ -8,6 +8,7 @@ from django.db.models import Q
  
 from django.contrib.auth.hashers import check_password
 import jwt
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import UserRegisterSerializer,UserChangePasswordSerializer
@@ -139,9 +140,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['is_superuser'] = user.is_superuser
         token['email'] = user.email
         token['role'] = user.role
-        token['phone_number'] = user.phone_number
+        token['phone_number'] = str(user.phone_number)
 
-        print(token)
+        print(token,"token")
+        
         
         
         return token
@@ -354,13 +356,29 @@ class OtpVerify(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
         otp = request.data.get('otp')
+
         try:
             user = AccountUser.objects.get(phone_number=phone_number)  # Retrieve user by phone number
-            print(user,"User")
-            verification_status = helper.verify_otp('+91' + str(phone_number), otp)  # Verify OTP using Twilio
+            print(user, "User")
+
+            # Assuming you have a helper function for OTP verification (replace it with your actual implementation)
+            verification_status = helper.verify_otp('+91' + str(phone_number), otp)
 
             if verification_status:
-                return Response({'message': "OTP verification successful. User logged in."}, status=status.HTTP_200_OK)
+                # Generate JWT tokens
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+
+                # Custom token response
+                token_data = {
+                    'access': access_token,
+                    'refresh': str(refresh),
+                    'email': user.email,
+                    'phone_number': str(user.phone_number),
+                    'first_name': user.first_name,
+                }
+
+                return Response(token_data, status=status.HTTP_200_OK)
             else:
                 return Response({'message': "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         except AccountUser.DoesNotExist:

@@ -86,7 +86,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod    
     def get_token(cls, user):
         token = super().get_token(user)
+
         token['email'] = user.email  # Assuming you have a 'role' field in your user model
+        token['phone_number'] = str(user.phone_number)
+        token['first_name'] = user.first_name
         return token
 
 class CustomTokenRefreshSerializer(TokenObtainPairSerializer):
@@ -95,6 +98,8 @@ class CustomTokenRefreshSerializer(TokenObtainPairSerializer):
         refresh = self.get_token(self.user)
         data['access'] = str(refresh.access_token)
         data['email'] = self.user.email
+        data['phone_number'] = self.user.phone_number
+        data['first_name'] = self.user.first_name
         return data
 
 
