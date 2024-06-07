@@ -76,7 +76,7 @@ class UserRegistrationView(APIView):
 
             return Response({'msg':"reg sucess"},status=status.HTTP_201_CREATED)
         return Response(
-            data={'msg': "extra ", 'errors': serializer.errors}, 
+            data={'msg': "extra", 'errors': serializer.errors}, 
             status=status.HTTP_400_BAD_REQUEST
         )
 
