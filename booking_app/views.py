@@ -64,8 +64,12 @@ class CreateCategoryView(CreateAPIView):
         # Check if the category name is unique
         if Category.objects.filter(category_name__iexact=category_name).exists():
             return Response({'detail': 'Category with this name already exists.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = self.get_serializer(data={'category_name': category_name, 'image': image})
+        
+        data = {
+            'category_name': category_name,
+            'image': image
+        }
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
