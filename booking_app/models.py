@@ -41,7 +41,7 @@ class RoomImage(models.Model):
 
 class Category(models.Model):
     category_name = models.CharField(max_length=30)
-    image = models.ImageField(upload_to='media/images',default='path/to/default_image.jpg' )
+    image = models.ImageField(upload_to='images/',default='path/to/default_image.jpg' )
     is_active = models.BooleanField(default=True)
 
     class Meta:
