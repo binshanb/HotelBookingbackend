@@ -58,7 +58,7 @@ class CreateCategoryView(CreateAPIView):
     def create(self, request, *args, **kwargs):
 
         # Access data using names
-        category_name = request.POST.get('categoryName', '').strip()
+        category_name = request.POST.get('category_name', '').strip()
         image = request.FILES.get('image', None)
 
         # Check if the category name is unique
